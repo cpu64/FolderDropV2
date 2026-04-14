@@ -1,0 +1,14 @@
+[project]
+name = "folderdrop"
+version = "0.1.0"
+dependencies = [
+    "quart",
+    "hypercorn",
+    "PyQt6",
+    "click",
+    "platformdirs"
+]
+
+[project.scripts]
+# folderdrop = "app.cli:cli"
+folderdrop = "app.main:main"
