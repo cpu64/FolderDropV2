@@ -2,7 +2,7 @@ import click
 import asyncio
 import sys
 
-from app.host.controllers.main import MainController
+from app.host.controllers.main import MainWindowController
 
 @click.group()
 def cli():
@@ -17,7 +17,7 @@ def web():
 @cli.command()
 def desktop():
     """Run Qt desktop app"""
-    main_controller = MainController()
+    main_controller = MainWindowController()
     return main_controller.run()
 
 

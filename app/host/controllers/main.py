@@ -2,9 +2,9 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 from app.host.ui.main import MainWindow
-from app.host.controllers.settings import SettingsController
+from app.host.controllers.settings import SettingsWindowController
 
-class MainController:
+class MainWindowController:
     def __init__(self):
         self.app = QApplication(sys.argv)
         self.main_window = MainWindow(self.open_settings)
@@ -12,7 +12,7 @@ class MainController:
 
     def open_settings(self):
         # Create fresh instances each time (safe default)
-        self.settings_controller = SettingsController()
+        self.settings_controller = SettingsWindowController()
 
     def run(self):
         self.main_window.show()

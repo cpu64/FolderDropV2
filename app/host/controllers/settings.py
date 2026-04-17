@@ -4,7 +4,7 @@ from app.models.settings import settings_store, Settings
 from app.host.ui.settings import SettingsWindow
 
 
-class SettingsController:
+class SettingsWindowController:
     def __init__(self):
         self.settings_window = SettingsWindow(self.save_settings, self.browse_path)
         self.settings_window.setWindowTitle("Settings")
