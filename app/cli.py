@@ -1,8 +1,9 @@
 import click
 import asyncio
+import sys
 
-from app.server import run as run_server
-from app
+from app.host.controllers.main import MainController
+
 @click.group()
 def cli():
     pass
@@ -10,12 +11,15 @@ def cli():
 @cli.command()
 def web():
     """Run Quart + Hypercorn server"""
-    asyncio.run(run_server())
+    # asyncio.run(run_server())
+    pass
 
 @cli.command()
 def desktop():
     """Run Qt desktop app"""
-    run_desktop()
+    main_controller = MainController()
+    return main_controller.run()
+
 
 @cli.command()
 @click.argument("name")

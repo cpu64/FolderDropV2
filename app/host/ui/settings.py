@@ -1,19 +1,20 @@
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
-    QWidget, QLabel, QPushButton, QVBoxLayout,
-    QLineEdit, QCheckBox, QFormLayout, QFileDialog, QHBoxLayout, QMessageBox
+    QDialog, QVBoxLayout, QFormLayout,
+    QPushButton, QMessageBox,
+    QLabel, QLineEdit, QCheckBox,
+    QHBoxLayout, QWidget
 )
-from app.host.controllers.settings import SettingsController
-from app.models.settings import Settings
-import os
 
 
-class SettingsWidget(QWidget):
-    def __init__(self):
+class SettingsWindow(QDialog):
+    def __init__(self, save_settings, browse_path):
         super().__init__()
 
-        self.setWindowFlags(self.windowFlags())
+        self.save_settings = save_settings
+        self.browse_path = browse_path
 
-        self.controller = SettingsController()
+        self.settings = None
         self.edit_mode = False
 
         self.layout = QVBoxLayout()
@@ -23,72 +24,51 @@ class SettingsWidget(QWidget):
         self.layout.addLayout(self.form_layout)
 
         self.button = QPushButton("Change Settings")
-        self.button.clicked.connect(self.toggle_mode)
+        self.button.clicked.connect(self.enter_edit_mode)
         self.layout.addWidget(self.button)
 
-        self.load_settings()
+    # ------------------------
+    # State setters
+    # ------------------------
+    def set_settings(self, settings, render=True):
+        self.settings = settings
+        if render:
+            self.render()
 
     # ------------------------
-    # Load + Render
+    # Rendering
     # ------------------------
-    def load_settings(self):
-        self.settings = self.controller.get_settings()
-        self.render()
-
     def clear_form(self):
         while self.form_layout.rowCount():
             self.form_layout.removeRow(0)
 
     def render(self):
+        if not self.settings:
+            return
+
         self.clear_form()
 
-        if not self.edit_mode:
-            self.render_view_mode()
-            self.button.setText("Change Settings")
-        else:
-            self.render_edit_mode()
+        # safely disconnect previous signal
+        try:
+            self.button.clicked.disconnect()
+        except TypeError:
+            pass
+
+        if self.edit_mode:
             self.button.setText("Save Settings")
+            self.button.clicked.connect(self.exit_edit_mode)
+            self.render_edit_mode()
+        else:
+            self.button.setText("Change Settings")
+            self.button.clicked.connect(self.enter_edit_mode)
+            self.render_view_mode()
 
     # ------------------------
-    # Helpers
+    # View mode
     # ------------------------
-    def bool_label(self, value: bool) -> QLabel:
+    def bool_label(self, value: bool):
         return QLabel("✅" if value else "❌")
 
-    def validate_inputs(self):
-        # ------------------------
-        # Validate port
-        # ------------------------
-        try:
-            port = int(self.port_input.text())
-        except ValueError:
-            raise ValueError("Port must be a number")
-
-        if not (1 <= port <= 65535):
-            raise ValueError("Port must be between 1 and 65535")
-
-        # ------------------------
-        # Validate path
-        # ------------------------
-        path = self.path_input.text()
-
-        if not os.path.exists(path):
-            raise ValueError("Selected path does not exist")
-
-        if not os.path.isdir(path):
-            raise ValueError("Selected path is not a directory")
-
-        if not os.access(path, os.R_OK):
-            raise ValueError("No read permission for this directory")
-
-        if not os.access(path, os.W_OK):
-            raise ValueError("No write permission for this directory")
-
-        return port, path
-
-    # ------------------------
-    # View Mode
-    # ------------------------
     def render_view_mode(self):
         s = self.settings
 
@@ -100,18 +80,8 @@ class SettingsWidget(QWidget):
         self.form_layout.addRow("Allow Rename:", self.bool_label(s.allow_rename))
         self.form_layout.addRow("Allow Delete:", self.bool_label(s.allow_delete))
 
-    def select_path(self):
-        directory = QFileDialog.getExistingDirectory(
-            self,
-            "Select Directory",
-            self.path_input.text() or "."
-        )
-
-        if directory:
-            self.path_input.setText(directory)
-
     # ------------------------
-    # Edit Mode
+    # Edit mode
     # ------------------------
     def render_edit_mode(self):
         s = self.settings
@@ -121,9 +91,7 @@ class SettingsWidget(QWidget):
 
         self.port_input = QLineEdit(str(s.port))
 
-        # ------------------------
         # Path selector
-        # ------------------------
         self.path_input = QLineEdit(s.path)
         self.path_input.setReadOnly(True)
 
@@ -134,13 +102,10 @@ class SettingsWidget(QWidget):
         path_layout.addWidget(self.path_input)
         path_layout.addWidget(self.browse_button)
 
-        # Wrap layout into a QWidget (required for QFormLayout)
         path_widget = QWidget()
         path_widget.setLayout(path_layout)
 
-        # ------------------------
         # Checkboxes
-        # ------------------------
         self.allow_upload_input = QCheckBox()
         self.allow_upload_input.setChecked(s.allow_upload)
 
@@ -153,9 +118,7 @@ class SettingsWidget(QWidget):
         self.allow_delete_input = QCheckBox()
         self.allow_delete_input.setChecked(s.allow_delete)
 
-        # ------------------------
-        # Form layout
-        # ------------------------
+        # Layout
         self.form_layout.addRow("Password:", self.password_input)
         self.form_layout.addRow("Port:", self.port_input)
         self.form_layout.addRow("Path:", path_widget)
@@ -165,36 +128,31 @@ class SettingsWidget(QWidget):
         self.form_layout.addRow("Allow Delete:", self.allow_delete_input)
 
     # ------------------------
-    # Toggle / Save
+    # Actions
     # ------------------------
-    def toggle_mode(self):
-        if self.edit_mode:
-            success = self.save_settings()
-            if not success:
-                return  # stay in edit mode if validation fails
-
-        self.edit_mode = not self.edit_mode
+    def enter_edit_mode(self):
+        self.edit_mode = True
         self.render()
 
-    def save_settings(self):
-        try:
-            port, path = self.validate_inputs()
+    def exit_edit_mode(self):
+        data = self.collect_inputs()
+        self.save_settings(data)
+        self.edit_mode = False
+        self.render()
 
-            new_settings = Settings(
-                password=self.password_input.text(),
-                port=port,
-                path=path,
-                allow_upload=self.allow_upload_input.isChecked(),
-                allow_download=self.allow_download_input.isChecked(),
-                allow_rename=self.allow_rename_input.isChecked(),
-                allow_delete=self.allow_delete_input.isChecked(),
-            )
+    def collect_inputs(self):
+        return {
+            "password": self.password_input.text(),
+            "port": self.port_input.text(),
+            "path": self.path_input.text(),
+            "allow_upload": self.allow_upload_input.isChecked(),
+            "allow_download": self.allow_download_input.isChecked(),
+            "allow_rename": self.allow_rename_input.isChecked(),
+            "allow_delete": self.allow_delete_input.isChecked(),
+        }
 
-            self.controller.update_settings(new_settings)
-            self.settings = new_settings
+    def select_path(self):
+        self.path_input.setText(self.browse_path(self.path_input.text()))
 
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
-            return False
-
-        return True
+    def show_error(self, message):
+        QMessageBox.critical(self, "Error", message)

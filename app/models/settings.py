@@ -1,19 +1,10 @@
 import sqlite3
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional
 from platformdirs import user_config_dir
 
 APP_NAME = "folderdrop"
 
-CONFIG_DIR = Path(user_config_dir(APP_NAME))
-CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-DB_PATH = CONFIG_DIR / "app.db"
-
-# ------------------------
-# Data (Settings)
-# ------------------------
 @dataclass
 class Settings:
     password: str
@@ -25,18 +16,20 @@ class Settings:
     allow_delete: bool
 
 
-# ------------------------
-# DB Layer
-# ------------------------
-class SettingsDB:
-    def __init__(self, db_path: Optional[Path] = None):
-        self.db_path = db_path or DB_PATH
-        self._ensure_db()
+class SettingsStore:
+    def __init__(self, db_path: Path | None = None):
+        if db_path is None:
+            config_dir = Path(user_config_dir(APP_NAME))
+            config_dir.mkdir(parents=True, exist_ok=True)
+            db_path = config_dir / "app.db"
+
+        self.db_path = db_path
+        self._init_db()
 
     def _connect(self):
         return sqlite3.connect(self.db_path)
 
-    def _ensure_db(self):
+    def _init_db(self):
         with self._connect() as conn:
             conn.execute(
                 """
@@ -53,7 +46,6 @@ class SettingsDB:
                 """
             )
 
-            # Ensure single row exists
             cur = conn.execute("SELECT COUNT(*) FROM settings")
             count = cur.fetchone()[0]
 
@@ -69,10 +61,7 @@ class SettingsDB:
                     """
                 )
 
-    # ------------------------
-    # CRUD
-    # ------------------------
-    def get(self) -> Settings:
+    def get_settings(self) -> Settings:
         with self._connect() as conn:
             cur = conn.execute("SELECT * FROM settings WHERE id = 1")
             row = cur.fetchone()
@@ -90,7 +79,7 @@ class SettingsDB:
                 allow_delete=bool(row[7]),
             )
 
-    def update(self, settings: Settings):
+    def save_settings(self, settings: Settings):
         with self._connect() as conn:
             conn.execute(
                 """
@@ -115,39 +104,5 @@ class SettingsDB:
                 ),
             )
 
-    def patch(self, **kwargs):
-        """
-        Partial update (only provided fields)
-        Example: db.patch(port=8000, allow_upload=False)
-        """
-        allowed = {
-            "password",
-            "port",
-            "path",
-            "allow_upload",
-            "allow_download",
-            "allow_rename",
-            "allow_delete",
-        }
+settings_store = SettingsStore()
 
-        fields = []
-        values = []
-
-        for key, value in kwargs.items():
-            if key not in allowed:
-                continue
-
-            fields.append(f"{key} = ?")
-
-            if isinstance(value, bool):
-                value = int(value)
-
-            values.append(value)
-
-        if not fields:
-            return
-
-        query = f"UPDATE settings SET {', '.join(fields)} WHERE id = 1"
-
-        with self._connect() as conn:
-            conn.execute(query, values)

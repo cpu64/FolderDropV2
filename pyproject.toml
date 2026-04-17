@@ -10,5 +10,5 @@ dependencies = [
 ]
 
 [project.scripts]
-# folderdrop = "app.cli:cli"
-folderdrop = "app.main:main"
+folderdrop = "app.cli:cli"
+# folderdrop = "app.main:main"
