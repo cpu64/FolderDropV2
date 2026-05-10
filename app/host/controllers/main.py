@@ -1,14 +1,26 @@
 import sys
+import socket
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from PyQt6.QtWidgets import QApplication
 
 from app.host.ui.main import MainWindow
 from app.host.controllers.settings import SettingsWindowController
+from app.host.controllers.FileController import FileController
+from app.models.settings import settings_store
+from app.models.FileSystemObject import FileSystemObject
+
 
 class MainWindowController:
     def __init__(self):
         self.app = QApplication(sys.argv)
-        self.main_window = MainWindow(self.open_settings)
+        self.main_window = MainWindow(
+            on_open_settings=self.open_settings,
+            on_start_sharing=self.startSharing,
+        )
         self.settings_controller = None
+        self.file_controller = FileController()
+        self.dir_cache = None
 
     def open_settings(self):
         # Create fresh instances each time (safe default)
@@ -17,3 +29,69 @@ class MainWindowController:
     def run(self):
         self.main_window.show()
         return self.app.exec()
+
+    def startSharing(self):
+        settings = settings_store.get_settings()
+        error = self.validateSettings(settings)
+        if error:
+            self.main_window.show_error(error)
+            return
+
+        try:
+            folder_info = self.file_controller.checkFolderUsable(settings.path)
+        except ValueError as e:
+            self.main_window.show_error(str(e))
+            return
+
+        folder_content = self.file_controller.getFolderContent(settings.path)
+
+        self.dir_cache = FileSystemObject.from_folder_content(folder_content)
+
+        try:
+            self.activateSharing(settings)
+        except Exception as e:
+            self.main_window.show_error(f"Failed to start sharing: {e}")
+            return
+
+        link = self.generateLink(settings)
+        self.main_window.show_link(link)
+
+    def validateSettings(self, settings):
+        if not settings.path:
+            return "Shared folder path is not set."
+        if not settings.port or settings.port < 1 or settings.port > 65535:
+            return "Port must be between 1 and 65535."
+        return None
+
+    def activateSharing(self, settings):
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"Hello from FolderDrop!\n")
+
+            def log_message(self, format, *args):
+                pass
+
+        server = HTTPServer(("0.0.0.0", settings.port), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+    def generateLink(self, settings=None):
+        if settings is None:
+            settings = settings_store.get_settings()
+        hostname = socket.gethostname()
+        try:
+            ip = socket.gethostbyname(hostname)
+        except socket.gaierror:
+            ip = "127.0.0.1"
+        return f"http://{ip}:{settings.port}"
+
+    def CanStop(self):
+        pass
+
+    def stopSharing(self):
+        pass
+
+    def forceStopSharing(self):
+        pass
