@@ -49,13 +49,16 @@ class OwnerFileSystemInterface:
         entries = []
         for entry in os.scandir(path):
             stat = entry.stat()
-            entries.append({
+            item = {
                 "name": entry.name,
                 "is_dir": entry.is_dir(),
                 "size": self._dir_size(entry.path) if entry.is_dir() else stat.st_size,
                 "modified_at": stat.st_mtime,
                 "created_at": stat.st_ctime,
-            })
+            }
+            if entry.is_dir():
+                item["children"] = self.getFolderContent(entry.path)
+            entries.append(item)
         return entries
 
     def _dir_size(self, path):

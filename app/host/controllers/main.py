@@ -64,11 +64,19 @@ class MainWindowController:
         return None
 
     def activateSharing(self, settings):
+        dir_cache = self.dir_cache
+
         class Handler(BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b"Hello from FolderDrop!\n")
+            def do_GET(handler):
+                handler.send_response(200)
+                handler.send_header("Content-Type", "text/plain; charset=utf-8")
+                handler.end_headers()
+                lines = []
+                if dir_cache:
+                    for obj in dir_cache:
+                        MainWindowController._render_tree(obj, lines, indent=0)
+                handler.wfile.write("\n".join(lines).encode("utf-8"))
+                handler.wfile.write(b"\n")
 
             def log_message(self, format, *args):
                 pass
@@ -76,6 +84,16 @@ class MainWindowController:
         server = HTTPServer(("0.0.0.0", settings.port), Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
+
+    @staticmethod
+    def _render_tree(obj, lines, indent=0):
+        prefix = "  " * indent
+        kind = "DIR" if obj.is_dir else "FILE"
+        lines.append(f"{prefix}[{kind}] {obj.name}  ({obj.size} bytes)")
+        for child in obj.child_folders:
+            MainWindowController._render_tree(child, lines, indent + 1)
+        for f in obj.folders_file:
+            MainWindowController._render_tree(f, lines, indent + 1)
 
     def generateLink(self, settings=None):
         if settings is None:
