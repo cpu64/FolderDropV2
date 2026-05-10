@@ -1,7 +1,45 @@
 import os
 
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
-class OwnerFileSystemInterface:
+
+class OwnerFileSystemInterface(FileSystemEventHandler):
+    def __init__(self):
+        super().__init__()
+        self.file_controller = None
+        self._observer = None
+
+    def set_file_controller(self, file_controller):
+        self.file_controller = file_controller
+
+    def start_watching(self, path):
+        self._observer = Observer()
+        self._observer.schedule(self, path, recursive=True)
+        self._observer.start()
+
+    def stop_watching(self):
+        if self._observer:
+            self._observer.stop()
+            self._observer.join()
+            self._observer = None
+
+    def on_deleted(self, event):
+        if self.file_controller:
+            self.file_controller.on_deleted(event)
+
+    def on_created(self, event):
+        if self.file_controller:
+            self.file_controller.on_created(event)
+
+    def on_modified(self, event):
+        if self.file_controller:
+            self.file_controller.on_modified(event)
+
+    def on_moved(self, event):
+        if self.file_controller:
+            self.file_controller.on_moved(event)
+
     def browse_folders(self):
         pass
 

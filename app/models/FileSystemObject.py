@@ -1,4 +1,5 @@
 import mimetypes
+import os
 from datetime import datetime
 
 
@@ -24,13 +25,43 @@ class FileSystemObject:
         return self.child_folders + self.folders_file
 
     def delete(self):
-        pass
+        if self.parent_folder is None:
+            return
+        if self.is_dir:
+            self.parent_folder.child_folders = [
+                c for c in self.parent_folder.child_folders if c is not self
+            ]
+        else:
+            self.parent_folder.folders_file = [
+                f for f in self.parent_folder.folders_file if f is not self
+            ]
+        self.parent_folder.element_count = (
+            len(self.parent_folder.child_folders) + len(self.parent_folder.folders_file)
+        )
+        self.parent_folder._recalc_size()
 
-    def create(self):
-        pass
+    def create(self, parent):
+        self.parent_folder = parent
+        if self.is_dir:
+            parent.child_folders.append(self)
+        else:
+            parent.folders_file.append(self)
+        parent.element_count = len(parent.child_folders) + len(parent.folders_file)
+        parent._recalc_size()
 
     def update(self):
-        pass
+        if self.is_dir:
+            self._recalc_size()
+            self.element_count = len(self.child_folders) + len(self.folders_file)
+        self.modified_at = datetime.now()
+
+    def _recalc_size(self):
+        total = 0
+        for f in self.folders_file:
+            total += f.size
+        for c in self.child_folders:
+            total += c.size
+        self.size = total
 
     def check_type(self):
         return "folder" if self.is_dir else "file"
@@ -41,6 +72,20 @@ class FileSystemObject:
     def decrease_downloader_count(self):
         if self.downloader_count > 0:
             self.downloader_count -= 1
+
+    def find_node(self, relative_path_parts):
+        if not relative_path_parts:
+            return self
+        target = relative_path_parts[0]
+        rest = relative_path_parts[1:]
+        for child in self.child_folders:
+            if child.name == target:
+                return child.find_node(rest)
+        if not rest:
+            for f in self.folders_file:
+                if f.name == target:
+                    return f
+        return None
 
     @classmethod
     def from_folder_content(cls, entries, parent_folder=None, is_root=False):

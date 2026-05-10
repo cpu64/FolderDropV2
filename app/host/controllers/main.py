@@ -1,3 +1,4 @@
+import os
 import sys
 import socket
 import threading
@@ -45,13 +46,25 @@ class MainWindowController:
 
         folder_content = self.file_controller.getFolderContent(settings.path)
 
-        self.dir_cache = FileSystemObject.from_folder_content(folder_content)
+        root = FileSystemObject(name=os.path.basename(settings.path), is_dir=True)
+        root.is_root = True
+        children = FileSystemObject.from_folder_content(folder_content, parent_folder=root)
+        root.child_folders = [c for c in children if c.is_dir]
+        root.folders_file = [c for c in children if not c.is_dir]
+        root.element_count = len(root.child_folders) + len(root.folders_file)
+        root._recalc_size()
+        self.dir_cache = root
+
+        self.file_controller.set_dir_cache(self.dir_cache, settings.path)
 
         try:
             self.activateSharing(settings)
         except Exception as e:
             self.main_window.show_error(f"Failed to start sharing: {e}")
             return
+
+        self.file_controller.owner_fs.set_file_controller(self.file_controller)
+        self.file_controller.owner_fs.start_watching(settings.path)
 
         link = self.generateLink(settings)
         self.main_window.show_link(link)
@@ -64,7 +77,7 @@ class MainWindowController:
         return None
 
     def activateSharing(self, settings):
-        dir_cache = self.dir_cache
+        controller = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(handler):
@@ -72,9 +85,9 @@ class MainWindowController:
                 handler.send_header("Content-Type", "text/plain; charset=utf-8")
                 handler.end_headers()
                 lines = []
-                if dir_cache:
-                    for obj in dir_cache:
-                        MainWindowController._render_tree(obj, lines, indent=0)
+                root = controller.dir_cache
+                if root:
+                    MainWindowController._render_tree(root, lines, indent=0)
                 handler.wfile.write("\n".join(lines).encode("utf-8"))
                 handler.wfile.write(b"\n")
 
