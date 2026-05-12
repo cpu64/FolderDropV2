@@ -9,7 +9,8 @@ from app.host.ui.main import MainWindow
 from app.host.controllers.settings import SettingsWindowController
 from app.host.controllers.FileController import FileController
 from app.models.settings import settings_store
-from app.models.FileSystemObject import FileSystemObject
+from app.models.FileSystemObject import Folder
+from app.web.Controllers.WebController import WebController
 
 
 class MainWindowController:
@@ -46,9 +47,9 @@ class MainWindowController:
 
         folder_content = self.file_controller.getFolderContent(settings.path)
 
-        root = FileSystemObject(name=os.path.basename(settings.path), is_dir=True)
+        root = Folder(name=os.path.basename(settings.path))
         root.is_root = True
-        children = FileSystemObject.from_folder_content(folder_content, parent_folder=root)
+        children = Folder.from_folder_content(folder_content, parent_folder=root)
         root.child_folders = [c for c in children if c.is_dir]
         root.folders_file = [c for c in children if not c.is_dir]
         root.element_count = len(root.child_folders) + len(root.folders_file)
@@ -77,36 +78,18 @@ class MainWindowController:
         return None
 
     def activateSharing(self, settings):
-        controller = self
+        try:
+            web_controller = WebController(self.dir_cache)
 
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(handler):
-                handler.send_response(200)
-                handler.send_header("Content-Type", "text/plain; charset=utf-8")
-                handler.end_headers()
-                lines = []
-                root = controller.dir_cache
-                if root:
-                    MainWindowController._render_tree(root, lines, indent=0)
-                handler.wfile.write("\n".join(lines).encode("utf-8"))
-                handler.wfile.write(b"\n")
+            server_thread = threading.Thread(
+                target=web_controller.run, kwargs={"host": "0.0.0.0", "port": settings.port}, daemon=True
+            )
+            server_thread.start()
 
-            def log_message(self, format, *args):
-                pass
-
-        server = HTTPServer(("0.0.0.0", settings.port), Handler)
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-
-    @staticmethod
-    def _render_tree(obj, lines, indent=0):
-        prefix = "  " * indent
-        kind = "DIR" if obj.is_dir else "FILE"
-        lines.append(f"{prefix}[{kind}] {obj.name}  ({obj.size} bytes)")
-        for child in obj.child_folders:
-            MainWindowController._render_tree(child, lines, indent + 1)
-        for f in obj.folders_file:
-            MainWindowController._render_tree(f, lines, indent + 1)
+            link = self.generateLink(settings)
+            self.main_window.show_link(link)
+        except Exception as e:
+            self.main_window.show_error(f"Failed to start sharing: {e}")
 
     def generateLink(self, settings=None):
         if settings is None:

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ folder.name }} — FolderDropV2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <style>
+        :root {
+          --bg: #0f0f10;
+          --surface: #17171a;
+          --border: #2a2a2f;
+          --accent: #4f9eff;
+          --accent-dim: #1e3d66;
+          --fg: #e2e2e5;
+          --fg-dim: #6b6b78;
+          --fg-muted: #3a3a42;
+          --folder: #f0a732;
+          --file: #4f9eff;
+          --danger: #ff5f57;
+          --radius: 6px;
+          --mono: 'IBM Plex Mono', monospace;
+          --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+
+        html,
+        body {
+          height: 100%;
+          background: var(--bg);
+          color: var(--fg);
+          font-family: var(--sans);
+          font-size: 14px;
+          line-height: 1.6;
+        }
+
+        /* ── Layout ─────────────────────────────── */
+        .shell {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* ── Main content ────────────────────────── */
+        .content {
+          flex: 1;
+          padding: 28px 28px 60px;
+          max-width: 1100px;
+          width: 100%;
+          margin: 0 auto;
+        }
+
+        /* ── Folder info strip ───────────────────── */
+        .folder-meta {
+          display: flex;
+          align-items: baseline;
+          gap: 20px;
+          margin-bottom: 22px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--border);
+          flex-wrap: wrap;
+        }
+
+        .folder-meta h1 {
+          font-family: var(--mono);
+          font-size: 20px;
+          font-weight: 600;
+          color: var(--fg);
+          letter-spacing: -.01em;
+        }
+
+        .meta-pill {
+          font-family: var(--mono);
+          font-size: 11px;
+          color: var(--fg-dim);
+          background: var(--border);
+          border-radius: 999px;
+          padding: 2px 10px;
+        }
+
+        /* ── Table ───────────────────────────────── */
+        .file-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .file-table thead tr {
+          border-bottom: 1px solid var(--border);
+        }
+
+        .file-table th {
+          font-family: var(--mono);
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: .12em;
+          text-transform: uppercase;
+          color: var(--fg-dim);
+          padding: 6px 12px 10px;
+          text-align: left;
+        }
+
+        .file-table th:last-child {
+          text-align: right;
+        }
+
+        .file-table tbody tr {
+          border-bottom: 1px solid var(--fg-muted);
+          transition: background .12s;
+        }
+
+        .file-table tbody tr:last-child {
+          border-bottom: none;
+        }
+
+        .file-table tbody tr:hover {
+          background: var(--surface);
+        }
+
+        .file-table td {
+          padding: 11px 12px;
+          vertical-align: middle;
+        }
+
+        /* ── Icon cell ───────────────────────────── */
+        .cell-icon {
+          width: 36px;
+          padding-right: 0;
+        }
+
+        .icon {
+          width: 28px;
+          height: 28px;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .icon-folder {
+          background: rgba(240, 167, 50, .12);
+          color: var(--folder);
+        }
+
+        .icon-file {
+          background: rgba(79, 158, 255, .1);
+          color: var(--file);
+        }
+
+        /* ── Name cell ───────────────────────────── */
+        .cell-name {
+          min-width: 180px;
+        }
+
+        .row-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0;
+          font-family: var(--mono);
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--fg);
+          text-decoration: none;
+          transition: color .12s;
+        }
+
+        .row-link:hover {
+          color: var(--accent);
+        }
+
+        .row-name-plain {
+          font-family: var(--mono);
+          font-size: 13px;
+          font-weight: 400;
+          color: var(--fg);
+        }
+
+        /* ── Badge ───────────────────────────────── */
+        .badge {
+          font-family: var(--mono);
+          font-size: 10px;
+          letter-spacing: .06em;
+          border-radius: 3px;
+          padding: 1px 6px;
+        }
+
+        .badge-folder {
+          background: rgba(240, 167, 50, .12);
+          color: var(--folder);
+        }
+
+        .badge-file {
+          background: rgba(79, 158, 255, .1);
+          color: var(--file);
+        }
+
+        /* ── Numeric / meta cells ────────────────── */
+        .cell-size,
+        .cell-modified,
+        .cell-items {
+          font-family: var(--mono);
+          font-size: 12px;
+          color: var(--fg-dim);
+        }
+
+        .cell-size,
+        .cell-items {
+          white-space: nowrap;
+        }
+
+        .cell-modified {
+          white-space: nowrap;
+        }
+
+        .cell-right {
+          text-align: right;
+        }
+
+        /* ── Section divider ─────────────────────── */
+        .section-label {
+          font-family: var(--mono);
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+          color: var(--fg-muted);
+          padding: 18px 12px 6px;
+        }
+
+        /* ── Empty state ─────────────────────────── */
+        .empty-state {
+          text-align: center;
+          padding: 80px 20px;
+        }
+
+        .empty-state svg {
+          opacity: .2;
+          margin-bottom: 16px;
+        }
+
+        .empty-state p {
+          font-family: var(--mono);
+          font-size: 13px;
+          color: var(--fg-dim);
+        }
+
+        /* ── Footer ──────────────────────────────── */
+        .footer {
+          padding: 16px 28px;
+          border-top: 1px solid var(--border);
+          font-family: var(--mono);
+          font-size: 11px;
+          color: var(--fg-muted);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+<div class="shell">
+    <main class="content">
+
+        <div class="folder-meta">
+            <h1>{{ folder.name }}</h1>
+            <span class="meta-pill">{{ folder.child_folders | length }} folder{% if folder.child_folders | length != 1 %}s{%
+          endif %}</span>
+            <span class="meta-pill">{{ folder.folders_file | length }} file{% if folder.folders_file | length != 1 %}s{%
+          endif %}</span>
+            <span class="meta-pill">{{ folder.size | filesizeformat if folder.size else '—' }}</span>
+        </div>
+        <table class="file-table" role="grid">
+            <thead>
+            <tr>
+                <th class="cell-icon"></th>
+                <th>Name</th>
+                <th>Type</th>
+                <th class="cell-right">Items / Size</th>
+                <th class="cell-right">Modified</th>
+            </tr>
+            </thead>
+            <tbody>
+            {# ── Parent folder row ───────────────────────── #}
+            {% if parent_url %}
+            <tr>
+                <td class="cell-icon">
+                    <div class="icon icon-folder">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                            <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
+                                  stroke="currentColor" stroke-width="1.2" fill="none"/>
+                        </svg>
+                    </div>
+                </td>
+                <td class="cell-name">
+                    <a class="row-link" href="{{ parent_url }}">../</a>
+                </td>
+                <td>
+                    <span class="badge badge-folder">folder</span>
+                </td>
+                <td class="cell-right">—</td>
+                <td class="cell-right">—</td>
+            </tr>
+            {% endif %}
+            {# ── Folders ─────────────────────────────────── #}
+            {% for subfolder in folder.child_folders %}
+            <tr>
+                <td class="cell-icon">
+                    <div class="icon icon-folder">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
+                                  stroke="currentColor" stroke-width="1.2" fill="none"/>
+                        </svg>
+                    </div>
+                </td>
+                <td class="cell-name">
+                    <a class="row-link"
+                       href="/browse/{{ breadcrumbs[1:] | map(attribute='name') | list | join('/') }}{% if breadcrumbs | length > 1 %}/{% endif %}{{ subfolder.name }}">
+                        {{ subfolder.name }}
+                    </a>
+                </td>
+                <td>
+                    <span class="badge badge-folder">folder</span>
+                </td>
+                <td class="cell-items cell-right">
+                    {{ subfolder.element_count }}
+                    item{% if subfolder.element_count != 1 %}s{% endif %}
+                </td>
+                <td class="cell-modified cell-right">
+                    {{ subfolder.modified_at.strftime('%b %d, %Y') }}
+                </td>
+            </tr>
+            {% endfor %}
+            {# ── Files ───────────────────────────────────── #}
+            {% for file in folder.folders_file %}
+            <tr>
+                <td class="cell-icon">
+                    <div class="icon icon-file">
+                        <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 1.5H8.5L12 5V14.5H2V1.5Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                            <path d="M8.5 1.5V5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </td>
+                <td class="cell-name">
+              <span class="row-name-plain">
+                {{ file.name }}
+              </span>
+                </td>
+                <td>
+              <span class="badge badge-file">
+                {{ file.extension if file.extension else 'file' }}
+              </span>
+                </td>
+                <td class="cell-size cell-right">
+                    {% if file.size >= 1073741824 %}
+                    {{ "%.1f"|format(file.size / 1073741824) }} GB
+                    {% elif file.size >= 1048576 %}
+                    {{ "%.1f"|format(file.size / 1048576) }} MB
+                    {% elif file.size >= 1024 %}
+                    {{ "%.1f"|format(file.size / 1024) }} KB
+                    {% else %}
+                    {{ file.size }} B
+                    {% endif %}
+                </td>
+                <td class="cell-modified cell-right">
+                    {{ file.modified_at.strftime('%b %d, %Y') }}
+                </td>
+            </tr>
+            {% endfor %}
+            {# ── Empty folder row ────────────────────────── #}
+            {% if not folder.child_folders and not folder.folders_file %}
+            <tr>
+                <td colspan="5" class="empty-row">
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
+                                  stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <p>This folder is empty</p>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            </tbody>
+        </table>
+
+    </main>
+
+</div>
+<script>
+    const OS_NAME = {{ os_name | tojson }};
+    const FS_TYPE = {{ fs_type | tojson }};
+
+    class FileValidationController {
+      constructor(filepath) {
+        this.filepath = filepath;
+        this.errors = [];
+      }
+
+      validatePath() {
+        if (this.isAbsolutePath(this.filepath)) return false;
+
+        const parts = this.splitPathIntoParts();
+        for (const part of parts) {
+          if (part === "..") {
+            this.registerError("Path must not contain '..'");
+          } else {
+            if (this.verifyPathAgainstOS(part)) {
+              if (!this.verifyPathAgainstFileSystem(part)) {
+                this.registerError(`Path part '${part}' isn't valid in this file system.`);
+              }
+            } else {
+              this.registerError(`Path part '${part}' is not valid on this OS.`);
+            }
+          }
+        }
+
+        return this.errors.length === 0;
+      }
+
+      isAbsolutePath(filepath) {
+        const isAbsolute =
+          /^[A-Za-z]:[\\\/]/.test(filepath) ||
+          filepath.startsWith("\\\\") ||
+          filepath.startsWith("/");
+
+        if (isAbsolute) {
+          this.registerError("Path must not be absolute.");
+          return true;
+        }
+        return false;
+      }
+
+      splitPathIntoParts() {
+        const sep = OS_NAME === "Windows" ? "\\" : "/";
+        return this.filepath.split(sep);
+      }
+
+      registerError(message) {
+        this.errors.push(message);
+      }
+
+      verifyPathAgainstOS(part) {
+        if (!part) return false;
+        if (part.includes("\x00")) return false;
+
+        if (OS_NAME === "Windows") {
+          if (/[<>:"/\\|?*\x00-\x1f]/.test(part)) return false;
+          if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..+)?$/i.test(part)) return false;
+        }
+
+        return true;
+      }
+
+      verifyPathAgainstFileSystem(part, maxLen = 255) {
+        if (!part) return false;
+
+        const encoded = new TextEncoder().encode(part);
+        if (encoded.length > maxLen) return false;
+
+        if (FS_TYPE.includes("FAT") || FS_TYPE.includes("NTFS")) {
+          if (part.endsWith(".") || part.endsWith(" ")) return false;
+          if (/[<>:"/\\|?*\x00-\x1f]/.test(part)) return false;
+        }
+
+        return true;
+      }
+    }
+</script>
+</body>
+
+</html>

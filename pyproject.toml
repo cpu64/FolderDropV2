@@ -6,7 +6,8 @@ dependencies = [
     "hypercorn",
     "PyQt6",
     "click",
-    "platformdirs"
+    "platformdirs",
+    "psutil"
 ]
 
 [project.scripts]
