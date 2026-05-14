@@ -373,6 +373,80 @@
           color: var(--fg-dim);
         }
 
+        /* ── Download dropdown ───────────────────── */
+        .dl-wrap {
+          position: relative;
+          display: inline-block;
+        }
+
+        .btn-dl-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 26px;
+          height: 26px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--fg-muted);
+          cursor: pointer;
+          transition: border-color .15s, color .15s, background .15s;
+        }
+
+        .btn-dl-toggle:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: var(--accent-dim);
+        }
+
+        .btn-dl-toggle.loading {
+          opacity: .5;
+          cursor: wait;
+          pointer-events: none;
+        }
+
+        .dropdown-right {
+          left: auto;
+          right: 0;
+        }
+
+        /* ── Download button ─────────────────────── */
+        .btn-dl {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-family: var(--mono);
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--fg-dim);
+          cursor: pointer;
+          transition: border-color .15s, color .15s, background .15s;
+          white-space: nowrap;
+          text-decoration: none;
+        }
+
+        .btn-dl:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: var(--accent-dim);
+        }
+
+        .btn-dl.loading {
+          opacity: .5;
+          cursor: wait;
+          pointer-events: none;
+        }
+
+        .cell-action {
+          width: 1%;
+          white-space: nowrap;
+          text-align: right;
+          padding-right: 8px;
+        }
+
         /* ── Footer ──────────────────────────────── */
         .footer {
           padding: 16px 28px;
@@ -423,6 +497,7 @@
                 <th>Type</th>
                 <th class="cell-right">Items / Size</th>
                 <th class="cell-right">Modified</th>
+                <th class="cell-action"></th>
             </tr>
             </thead>
             <tbody>
@@ -446,6 +521,7 @@
                 </td>
                 <td class="cell-right">—</td>
                 <td class="cell-right">—</td>
+                <td class="cell-action"></td>
             </tr>
             {% endif %}
             {# ── Folders ─────────────────────────────────── #}
@@ -474,6 +550,22 @@
                 </td>
                 <td class="cell-modified cell-right">
                     {{ subfolder.modified_at.strftime('%b %d, %Y') }}
+                </td>
+                <td class="cell-action">
+                    {% set subfolder_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
+                    {% if subfolder_path %}{% set subfolder_path = subfolder_path + '/' %}{% endif %}
+                    <div class="dl-wrap">
+                        <button class="btn-dl-toggle"
+                                onclick="toggleDlMenu(this, '{{ subfolder_path }}{{ subfolder.name }}', 'folder')"
+                                title="Actions">
+                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown dropdown-right"></div>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -512,12 +604,28 @@
                 <td class="cell-modified cell-right">
                     {{ file.modified_at.strftime('%b %d, %Y') }}
                 </td>
+                <td class="cell-action">
+                    {% set file_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
+                    {% if file_path %}{% set file_path = file_path + '/' %}{% endif %}
+                    <div class="dl-wrap">
+                        <button class="btn-dl-toggle"
+                                onclick="toggleDlMenu(this, '{{ file_path }}{{ file.name }}', 'file')"
+                                title="Actions">
+                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown dropdown-right"></div>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
             {# ── Empty folder row ────────────────────────── #}
             {% if not folder.child_folders and not folder.folders_file %}
             <tr>
-                <td colspan="5" class="empty-row">
+                <td colspan="6" class="empty-row">
                     <div class="empty-state">
                         <svg width="48" height="48" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
@@ -700,6 +808,62 @@
         const banner = document.getElementById("result-banner");
         banner.className = `banner ${type}`;
         banner.textContent = message;
+    }
+
+    function toggleDlMenu(btn, relPath, kind) {
+        const wrap = btn.closest(".dl-wrap");
+        const ddrop = wrap.querySelector(".dropdown");
+        const isOpen = ddrop.classList.contains("open");
+        closeDlMenus();
+        if (isOpen) return;
+
+        ddrop.innerHTML = `<div class="dropdown-empty">loading…</div>`;
+        ddrop.classList.add("open");
+
+        fetch("/api/menu")
+            .then(r => r.json())
+            .then(data => {
+                ddrop.innerHTML = "";
+                if (data.allow_download) {
+                    const label = kind === "folder" ? "Download as .zip" : "Download file";
+                    const item = document.createElement("button");
+                    item.className = "dropdown-item";
+                    item.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 2v9M4.5 7.5 8 11l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                        ${label}`;
+                    item.onclick = () => { closeDlMenus(); downloadItem(btn, relPath); };
+                    ddrop.appendChild(item);
+                } else {
+                    const empty = document.createElement("div");
+                    empty.className = "dropdown-empty";
+                    empty.textContent = "No available actions";
+                    ddrop.appendChild(empty);
+                }
+            })
+            .catch(() => {
+                ddrop.innerHTML = `<div class="dropdown-empty">Could not load actions</div>`;
+            });
+    }
+
+    function closeDlMenus() {
+        document.querySelectorAll(".dl-wrap .dropdown.open").forEach(d => d.classList.remove("open"));
+    }
+
+    async function downloadItem(btn, relPath) {
+        btn.classList.add("downloading");
+        try {
+            const a = document.createElement("a");
+            a.href = "/api/download?path=" + encodeURIComponent(relPath);
+            a.download = "";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } finally {
+            btn.classList.remove("loading");
+        }
     }
 
 
