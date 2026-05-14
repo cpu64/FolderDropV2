@@ -1,7 +1,10 @@
+from urllib.parse import unquote
 import os
 
-from quart import Quart, render_template, abort
+from quart import Quart, render_template, abort, jsonify, request
 from app.models.FileSystemObject import FileSystemObject, Folder
+from app.models.settings import settings_store
+from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterface
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 import asyncio
@@ -12,6 +15,7 @@ import psutil
 class WebController:
     def __init__(self, dir_cache):
         self.app = Quart(__name__, template_folder='../templates')
+        self.owner_file_system_interface = OwnerFileSystemInterface()
         self.dir_cache = dir_cache
         self._register_routes()
 
@@ -27,6 +31,16 @@ class WebController:
             if node is None or not node.is_dir:
                 abort(404)
             return await self.showFolder(node)
+
+        @self.app.route("/api/top-menu")
+        async def top_menu():
+            return await self.open_top_menu()
+
+        @self.app.route("/api/create-folder", methods=["POST"])
+        async def create_folder_route():
+            body = await request.get_json(silent=True) or {}
+            current_path = unquote(body.get("current_path", "").strip())
+            return await self.create_folder(current_path)
 
     async def showFolder(self, folder: Folder):
         os_name = platform.system()
@@ -48,6 +62,27 @@ class WebController:
             os_name=os_name,
             fs_type=fs_type.upper(),
         )
+
+    async def open_top_menu(self):
+        allow = settings_store.get_settings().allow_upload
+        return jsonify({"allow_folder_creation": allow})
+
+    async def create_folder(self, current_path: str):
+        settings = settings_store.get_settings()
+
+        if not settings.allow_upload:
+            return jsonify({"ok": False, "error": "Folder creation is disabled."}), 403
+
+        rel_path = os.path.join(current_path, "new_folder") if current_path else "new_folder"
+
+        try:
+            full_path = os.path.join(settings_store.get_settings().path, rel_path)
+            self.owner_file_system_interface.mkdir(full_path)
+        except Exception as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 500
+
+        created = os.path.join(settings.path, rel_path)
+        return jsonify({"ok": True, "path": created})
 
     def run(self, host="0.0.0.0", port=5000):
         config = Config()

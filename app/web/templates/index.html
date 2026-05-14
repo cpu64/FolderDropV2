@@ -59,6 +59,126 @@
           margin: 0 auto;
         }
 
+        /* ── Top bar ─────────────────────────────── */
+        .top-bar {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 18px;
+        }
+
+        .btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-family: var(--mono);
+          font-size: 12px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--fg);
+          cursor: pointer;
+          transition: border-color .15s, color .15s;
+        }
+
+        .btn:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
+        .btn:disabled {
+          opacity: .4;
+          cursor: not-allowed;
+        }
+
+        /* ── Inline result banner ────────────────── */
+        .banner {
+          display: none;
+          font-family: var(--mono);
+          font-size: 12px;
+          padding: 6px 12px;
+          border-radius: var(--radius);
+        }
+
+        .banner.success {
+          display: inline-block;
+          background: rgba(79,255,140,.08);
+          color: #4fda8a;
+          border: 1px solid rgba(79,255,140,.18);
+        }
+
+        .banner.error {
+          display: inline-block;
+          background: rgba(255,95,87,.08);
+          color: var(--danger);
+          border: 1px solid rgba(255,95,87,.18);
+        }
+
+        /* ── Top-menu dropdown ───────────────────── */
+        .menu-wrap {
+          position: relative;
+          display: inline-block;
+        }
+
+        .menu-btn-caret {
+          width: 20px;
+          border-left: 1px solid var(--border);
+          padding-left: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 2px;
+        }
+
+        .dropdown {
+          display: none;
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          min-width: 200px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          box-shadow: 0 8px 24px rgba(0,0,0,.45);
+          z-index: 50;
+          overflow: hidden;
+        }
+
+        .dropdown.open {
+          display: block;
+        }
+
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          width: 100%;
+          padding: 9px 14px;
+          font-family: var(--mono);
+          font-size: 12px;
+          color: var(--fg);
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          transition: background .1s;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(79,158,255,.08);
+          color: var(--accent);
+        }
+
+        .dropdown-empty {
+          padding: 10px 14px;
+          font-family: var(--mono);
+          font-size: 11px;
+          color: var(--fg-muted);
+          letter-spacing: .04em;
+        }
+
         /* ── Folder info strip ───────────────────── */
         .folder-meta {
           display: flex;
@@ -271,6 +391,22 @@
 <div class="shell">
     <main class="content">
 
+        <div class="top-bar">
+            <div class="menu-wrap">
+                <button class="btn" id="btn-top-menu" onclick="openTopMenu()">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                    Actions
+                </button>
+                <div class="dropdown" id="top-menu-dropdown">
+                    <!-- populated by openTopMenu() -->
+                </div>
+            </div>
+            <span class="banner" id="result-banner" aria-live="polite"></span>
+        </div>
+
         <div class="folder-meta">
             <h1>{{ folder.name }}</h1>
             <span class="meta-pill">{{ folder.child_folders | length }} folder{% if folder.child_folders | length != 1 %}s{%
@@ -398,6 +534,7 @@
     </main>
 
 </div>
+
 <script>
     const OS_NAME = {{ os_name | tojson }};
     const FS_TYPE = {{ fs_type | tojson }};
@@ -477,6 +614,95 @@
         return true;
       }
     }
+
+    const CURRENT_PATH = location.pathname.startsWith("/browse/")
+    ? location.pathname.slice("/browse/".length)
+    : "";
+
+    const dropdown = document.getElementById("top-menu-dropdown");
+    let _menuOpen = false;
+
+    async function openTopMenu() {
+        if (_menuOpen) {
+            closeMenu();
+            return;
+        }
+
+        let data;
+        try {
+            const res = await fetch("/api/top-menu");
+            data = await res.json();
+        } catch {
+            showBanner("error", "✗ Could not reach the server.");
+            return;
+        }
+
+        dropdown.innerHTML = "";
+
+        if (data.allow_folder_creation) {
+            const item = document.createElement("button");
+            item.className = "dropdown-item";
+            item.innerHTML = `
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                New folder`;
+            item.onclick = () => { closeMenu(); createFolder(); };
+            dropdown.appendChild(item);
+        } else {
+            const empty = document.createElement("div");
+            empty.className = "dropdown-empty";
+            empty.textContent = "No available actions";
+            dropdown.appendChild(empty);
+        }
+
+        dropdown.classList.add("open");
+        _menuOpen = true;
+    }
+
+    function closeMenu() {
+        dropdown.classList.remove("open");
+        _menuOpen = false;
+    }
+
+    document.addEventListener("click", (e) => {
+        if (_menuOpen && !document.getElementById("btn-top-menu").contains(e.target) && !dropdown.contains(e.target)) {
+            closeMenu();
+        }
+    });
+
+    async function createFolder() {
+        const btn = document.getElementById("btn-top-menu");
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/create-folder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ current_path: CURRENT_PATH }),
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                showBanner("success", `✓ Created "new_folder"`);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showBanner("error", `✗ ${data.error}`);
+                btn.disabled = false;
+            }
+        } catch {
+            showBanner("error", "✗ Network error — could not reach the server.");
+            btn.disabled = false;
+        }
+    }
+
+    function showBanner(type, message) {
+        const banner = document.getElementById("result-banner");
+        banner.className = `banner ${type}`;
+        banner.textContent = message;
+    }
+
+
 </script>
 </body>
 

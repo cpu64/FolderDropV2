@@ -3,6 +3,8 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+from app.models.settings import settings_store
+
 
 class OwnerFileSystemInterface(FileSystemEventHandler):
     def __init__(self):
@@ -43,8 +45,18 @@ class OwnerFileSystemInterface(FileSystemEventHandler):
     def browse_folders(self):
         pass
 
-    def mkdir(self):
-        pass
+    def mkdir(self, path):
+        try:
+            os.makedirs(path)
+        except FileExistsError:
+            i = 0
+            while True:
+                try:
+                    new_name = path + f" ({i})"
+                    os.makedirs(new_name)
+                    break
+                except FileExistsError:
+                    i += 1
 
     def remove(self):
         pass
