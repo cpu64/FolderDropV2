@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterface
-from app.models.FileSystemObject import FileSystemObject
+from app.models.FileSystemObject import FileSystemObject, Folder
 
 
 class FileController:
@@ -44,12 +44,12 @@ class FileController:
         if parent is None:
             return
         name = os.path.basename(event.src_path)
-        is_dir = event.is_directory
 
-        node = FileSystemObject(name=name, is_dir=is_dir)
-        if is_dir:
+        if event.is_directory:
+            node = Folder(name=name)
             node.is_root = False
         else:
+            node = FileSystemObject(name=name, is_dir=False)
             node.extension = name.rsplit(".", 1)[-1] if "." in name else ""
             mime, _ = mimetypes.guess_type(name)
             node.mime_type = mime or ""
