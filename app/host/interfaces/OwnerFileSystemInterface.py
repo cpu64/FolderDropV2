@@ -1,8 +1,9 @@
 import os
+import shutil
+import tempfile
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-
 
 class OwnerFileSystemInterface(FileSystemEventHandler):
     def __init__(self):
@@ -43,15 +44,39 @@ class OwnerFileSystemInterface(FileSystemEventHandler):
     def browse_folders(self):
         pass
 
-    def mkdir(self):
-        pass
+    def mkdir(self, path):
+        try:
+            os.makedirs(path)
+        except FileExistsError:
+            i = 0
+            while True:
+                try:
+                    new_name = path + f" ({i})"
+                    os.makedirs(new_name)
+                    break
+                except FileExistsError:
+                    i += 1
 
     def remove(self):
         pass
 
-    def archive_folder(self):
-        pass
-
+    def archive_folder(self, full_folder_path: str) -> str:
+        full_folder_path = os.path.normpath(full_folder_path)
+        folder_name = os.path.basename(full_folder_path)
+        tmp_dir = tempfile.mkdtemp()
+        archive_base = os.path.join(tmp_dir, folder_name)
+        shutil.make_archive(
+            base_name=archive_base,
+            format="zip",
+            root_dir=os.path.dirname(full_folder_path),
+            base_dir=folder_name,
+        )
+        archive_path = archive_base + ".zip"
+        if not os.path.isfile(archive_path):
+            raise FileNotFoundError(
+                f"Archive was not created at expected path: {archive_path}"
+            )
+        return archive_path
     def save_part(self):
         pass
 

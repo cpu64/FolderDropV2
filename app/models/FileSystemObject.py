@@ -86,8 +86,6 @@ class Folder(FileSystemObject):
         self.folders_file = []
         self.element_count = 0
 
-    # ── Content access ────────────────────────────────────────────────────────
-
     def getFolderContents(self):
         return self.child_folders + self.folders_file
 
@@ -96,8 +94,6 @@ class Folder(FileSystemObject):
 
     def get_files(self):
         return list(self.folders_file)
-
-    # ── Tree traversal ────────────────────────────────────────────────────────
 
     def find_node(self, relative_path_parts):
         if not relative_path_parts:

@@ -59,6 +59,126 @@
           margin: 0 auto;
         }
 
+        /* ── Top bar ─────────────────────────────── */
+        .top-bar {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 18px;
+        }
+
+        .btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-family: var(--mono);
+          font-size: 12px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--fg);
+          cursor: pointer;
+          transition: border-color .15s, color .15s;
+        }
+
+        .btn:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
+        .btn:disabled {
+          opacity: .4;
+          cursor: not-allowed;
+        }
+
+        /* ── Inline result banner ────────────────── */
+        .banner {
+          display: none;
+          font-family: var(--mono);
+          font-size: 12px;
+          padding: 6px 12px;
+          border-radius: var(--radius);
+        }
+
+        .banner.success {
+          display: inline-block;
+          background: rgba(79,255,140,.08);
+          color: #4fda8a;
+          border: 1px solid rgba(79,255,140,.18);
+        }
+
+        .banner.error {
+          display: inline-block;
+          background: rgba(255,95,87,.08);
+          color: var(--danger);
+          border: 1px solid rgba(255,95,87,.18);
+        }
+
+        /* ── Top-menu dropdown ───────────────────── */
+        .menu-wrap {
+          position: relative;
+          display: inline-block;
+        }
+
+        .menu-btn-caret {
+          width: 20px;
+          border-left: 1px solid var(--border);
+          padding-left: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 2px;
+        }
+
+        .dropdown {
+          display: none;
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          min-width: 200px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          box-shadow: 0 8px 24px rgba(0,0,0,.45);
+          z-index: 50;
+          overflow: hidden;
+        }
+
+        .dropdown.open {
+          display: block;
+        }
+
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          width: 100%;
+          padding: 9px 14px;
+          font-family: var(--mono);
+          font-size: 12px;
+          color: var(--fg);
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          transition: background .1s;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(79,158,255,.08);
+          color: var(--accent);
+        }
+
+        .dropdown-empty {
+          padding: 10px 14px;
+          font-family: var(--mono);
+          font-size: 11px;
+          color: var(--fg-muted);
+          letter-spacing: .04em;
+        }
+
         /* ── Folder info strip ───────────────────── */
         .folder-meta {
           display: flex;
@@ -253,6 +373,80 @@
           color: var(--fg-dim);
         }
 
+        /* ── Download dropdown ───────────────────── */
+        .dl-wrap {
+          position: relative;
+          display: inline-block;
+        }
+
+        .btn-dl-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 26px;
+          height: 26px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--fg-muted);
+          cursor: pointer;
+          transition: border-color .15s, color .15s, background .15s;
+        }
+
+        .btn-dl-toggle:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: var(--accent-dim);
+        }
+
+        .btn-dl-toggle.loading {
+          opacity: .5;
+          cursor: wait;
+          pointer-events: none;
+        }
+
+        .dropdown-right {
+          left: auto;
+          right: 0;
+        }
+
+        /* ── Download button ─────────────────────── */
+        .btn-dl {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-family: var(--mono);
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: var(--radius);
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--fg-dim);
+          cursor: pointer;
+          transition: border-color .15s, color .15s, background .15s;
+          white-space: nowrap;
+          text-decoration: none;
+        }
+
+        .btn-dl:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: var(--accent-dim);
+        }
+
+        .btn-dl.loading {
+          opacity: .5;
+          cursor: wait;
+          pointer-events: none;
+        }
+
+        .cell-action {
+          width: 1%;
+          white-space: nowrap;
+          text-align: right;
+          padding-right: 8px;
+        }
+
         /* ── Footer ──────────────────────────────── */
         .footer {
           padding: 16px 28px;
@@ -358,6 +552,22 @@
 <div class="shell">
     <main class="content">
 
+        <div class="top-bar">
+            <div class="menu-wrap">
+                <button class="btn" id="btn-top-menu" onclick="openTopMenu()">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                    Actions
+                </button>
+                <div class="dropdown" id="top-menu-dropdown">
+                    <!-- populated by openTopMenu() -->
+                </div>
+            </div>
+            <span class="banner" id="result-banner" aria-live="polite"></span>
+        </div>
+
         <div class="folder-meta">
             <h1>{{ folder.name }}</h1>
             <span class="meta-pill">{{ folder.child_folders | length }} folder{% if folder.child_folders | length != 1 %}s{%
@@ -374,6 +584,7 @@
                 <th>Type</th>
                 <th class="cell-right">Items / Size</th>
                 <th class="cell-right">Modified</th>
+                <th class="cell-action"></th>
             </tr>
             </thead>
             <tbody>
@@ -397,6 +608,7 @@
                 </td>
                 <td class="cell-right">—</td>
                 <td class="cell-right">—</td>
+                <td class="cell-action"></td>
             </tr>
             {% endif %}
             {# ── Folders ─────────────────────────────────── #}
@@ -425,6 +637,22 @@
                 </td>
                 <td class="cell-modified cell-right">
                     {{ subfolder.modified_at.strftime('%b %d, %Y') }}
+                </td>
+                <td class="cell-action">
+                    {% set subfolder_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
+                    {% if subfolder_path %}{% set subfolder_path = subfolder_path + '/' %}{% endif %}
+                    <div class="dl-wrap">
+                        <button class="btn-dl-toggle"
+                                onclick="toggleDlMenu(this, '{{ subfolder_path }}{{ subfolder.name }}', 'folder')"
+                                title="Actions">
+                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown dropdown-right"></div>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -463,12 +691,28 @@
                 <td class="cell-modified cell-right">
                     {{ file.modified_at.strftime('%b %d, %Y') }}
                 </td>
+                <td class="cell-action">
+                    {% set file_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
+                    {% if file_path %}{% set file_path = file_path + '/' %}{% endif %}
+                    <div class="dl-wrap">
+                        <button class="btn-dl-toggle"
+                                onclick="toggleDlMenu(this, '{{ file_path }}{{ file.name }}', 'file')"
+                                title="Actions">
+                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown dropdown-right"></div>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
             {# ── Empty folder row ────────────────────────── #}
             {% if not folder.child_folders and not folder.folders_file %}
             <tr>
-                <td colspan="5" class="empty-row">
+                <td colspan="6" class="empty-row">
                     <div class="empty-state">
                         <svg width="48" height="48" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
@@ -497,6 +741,7 @@
     </main>
 
 </div>
+
 <script>
     const OS_NAME = {{ os_name | tojson }};
     const FS_TYPE = {{ fs_type | tojson }};
@@ -576,6 +821,150 @@
         return true;
       }
     }
+
+    const CURRENT_PATH = location.pathname.startsWith("/browse/")
+    ? location.pathname.slice("/browse/".length)
+    : "";
+
+    const dropdown = document.getElementById("top-menu-dropdown");
+    let _menuOpen = false;
+
+    async function openTopMenu() {
+        if (_menuOpen) {
+            closeMenu();
+            return;
+        }
+
+        let data;
+        try {
+            const res = await fetch("/api/top-menu");
+            data = await res.json();
+        } catch {
+            showBanner("error", "✗ Could not reach the server.");
+            return;
+        }
+
+        dropdown.innerHTML = "";
+
+        if (data.allow_folder_creation) {
+            const item = document.createElement("button");
+            item.className = "dropdown-item";
+            item.innerHTML = `
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                New folder`;
+            item.onclick = () => { closeMenu(); createFolder(); };
+            dropdown.appendChild(item);
+        } else {
+            const empty = document.createElement("div");
+            empty.className = "dropdown-empty";
+            empty.textContent = "No available actions";
+            dropdown.appendChild(empty);
+        }
+
+        dropdown.classList.add("open");
+        _menuOpen = true;
+    }
+
+    function closeMenu() {
+        dropdown.classList.remove("open");
+        _menuOpen = false;
+    }
+
+    document.addEventListener("click", (e) => {
+        if (_menuOpen && !document.getElementById("btn-top-menu").contains(e.target) && !dropdown.contains(e.target)) {
+            closeMenu();
+        }
+    });
+
+    async function createFolder() {
+        const btn = document.getElementById("btn-top-menu");
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/create-folder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ current_path: CURRENT_PATH }),
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                showBanner("success", `✓ Created "new_folder"`);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showBanner("error", `✗ ${data.error}`);
+                btn.disabled = false;
+            }
+        } catch {
+            showBanner("error", "✗ Network error — could not reach the server.");
+            btn.disabled = false;
+        }
+    }
+
+    function showBanner(type, message) {
+        const banner = document.getElementById("result-banner");
+        banner.className = `banner ${type}`;
+        banner.textContent = message;
+    }
+
+    function toggleDlMenu(btn, relPath, kind) {
+        const wrap = btn.closest(".dl-wrap");
+        const ddrop = wrap.querySelector(".dropdown");
+        const isOpen = ddrop.classList.contains("open");
+        closeDlMenus();
+        if (isOpen) return;
+
+        ddrop.innerHTML = `<div class="dropdown-empty">loading…</div>`;
+        ddrop.classList.add("open");
+
+        fetch("/api/menu")
+            .then(r => r.json())
+            .then(data => {
+                ddrop.innerHTML = "";
+                if (data.allow_download) {
+                    const label = kind === "folder" ? "Download as .zip" : "Download file";
+                    const item = document.createElement("button");
+                    item.className = "dropdown-item";
+                    item.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 2v9M4.5 7.5 8 11l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                        ${label}`;
+                    item.onclick = () => { closeDlMenus(); downloadItem(btn, relPath); };
+                    ddrop.appendChild(item);
+                } else {
+                    const empty = document.createElement("div");
+                    empty.className = "dropdown-empty";
+                    empty.textContent = "No available actions";
+                    ddrop.appendChild(empty);
+                }
+            })
+            .catch(() => {
+                ddrop.innerHTML = `<div class="dropdown-empty">Could not load actions</div>`;
+            });
+    }
+
+    function closeDlMenus() {
+        document.querySelectorAll(".dl-wrap .dropdown.open").forEach(d => d.classList.remove("open"));
+    }
+
+    async function downloadItem(btn, relPath) {
+        btn.classList.add("downloading");
+        try {
+            const a = document.createElement("a");
+            a.href = "/api/download?path=" + encodeURIComponent(relPath);
+            a.download = "";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } finally {
+            btn.classList.remove("loading");
+        }
+    }
+
 
     /* ── Global drop zone ───────────────────────── */
 
