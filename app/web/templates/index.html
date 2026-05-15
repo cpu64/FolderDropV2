@@ -458,6 +458,93 @@
           justify-content: space-between;
           align-items: center;
         }
+
+        /* ── Full-screen drop zone ───────────────────── */
+        body.drag-over::before {
+        content: "Drop file or folder";
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 15, 16, 0.88);
+        border: 2px dashed var(--accent);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        pointer-events: none;
+        backdrop-filter: blur(3px);
+        }
+
+        /* ── Popup modal ─────────────────────────────── */
+        .popup-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        }
+
+        .popup-overlay.active {
+        display: flex;
+        }
+
+        .popup {
+        width: 420px;
+        max-width: calc(100vw - 32px);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 22px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.45);
+        }
+
+        .popup h2 {
+        font-family: var(--mono);
+        font-size: 16px;
+        margin-bottom: 12px;
+        }
+
+        .popup p {
+        color: var(--fg-dim);
+        margin-bottom: 20px;
+        word-break: break-word;
+        }
+
+        .popup-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        }
+
+        .popup button {
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--fg);
+        padding: 8px 14px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: var(--mono);
+        transition: .12s ease;
+        }
+
+        .popup button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        }
+
+        .popup .confirm {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        }
+
+        .popup .confirm:hover {
+        filter: brightness(1.08);
+        }
     </style>
 </head>
 
@@ -638,6 +725,18 @@
             {% endif %}
             </tbody>
         </table>
+
+        <div class="popup-overlay" id="popupOverlay">
+            <div class="popup">
+                <h2 id="popupHeader"></h2>
+                <p id="popupText"></p>
+
+                <div class="popup-actions">
+                    <button id="cancelBtn">Cancel</button>
+                    <button class="confirm" id="confirmBtn">Upload</button>
+                </div>
+            </div>
+        </div>
 
     </main>
 
@@ -867,6 +966,77 @@
     }
 
 
+    /* ── Global drop zone ───────────────────────── */
+
+    const popupOverlay = document.getElementById("popupOverlay");
+    const popupHeader = document.getElementById("popupHeader");
+    const popupText = document.getElementById("popupText");
+
+    function openPopup(name, type) {
+      popupHeader.textContent = `${type} to be uploaded:`;
+      popupText.textContent = `${name}`;
+      popupOverlay.classList.add("active");
+    }
+
+    function closePopup() {
+      popupOverlay.classList.remove("active");
+    }
+
+    document.getElementById("confirmBtn").addEventListener("click", closePopup);
+    document.getElementById("cancelBtn").addEventListener("click", closePopup);
+
+    let dragCounter = 0;
+
+    window.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      dragCounter++;
+      document.body.classList.add("drag-over");
+    });
+
+    window.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+
+    window.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+
+      dragCounter--;
+
+      if (dragCounter <= 0) {
+        document.body.classList.remove("drag-over");
+        dragCounter = 0;
+      }
+    });
+
+    window.addEventListener("drop", (e) => {
+      e.preventDefault();
+
+      dragCounter = 0;
+      document.body.classList.remove("drag-over");
+
+      const items = e.dataTransfer.items;
+
+      if (!items || !items.length) return;
+
+      const item = items[0];
+
+      let entry = null;
+
+      if (item.webkitGetAsEntry) {
+        entry = item.webkitGetAsEntry();
+      }
+
+      if (entry) {
+        const type = entry.isDirectory ? "Folder" : "File";
+        openPopup(entry.name, type);
+      } else {
+        const file = item.getAsFile();
+
+        if (file) {
+          openPopup(file.name, "File");
+        }
+      }
+    });
 </script>
 </body>
 
