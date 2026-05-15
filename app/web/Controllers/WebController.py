@@ -9,14 +9,14 @@ from quart import Quart, render_template, abort, jsonify, request
 
 from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterface
 from app.models.settings import settings_store
-from app.web.Interfaces.FileBrowserInterface import FileBrowserInterface
+from app.web.Interfaces.BrowserInterface import BrowserInterface
 
 
 class WebController:
     def __init__(self, dir_cache):
         self.app = Quart(__name__, template_folder='../templates')
         self.owner_file_system_interface = OwnerFileSystemInterface()
-        self.file_browser_interface = FileBrowserInterface()
+        self.browser_interface = BrowserInterface()
         self.dir_cache = dir_cache
 
         self.os_name = platform.system()
@@ -110,24 +110,20 @@ class WebController:
 
             node.increase_downloader_count()
 
-            response = await self.file_browser_interface.download(
-                download_path,
-                download_name
-            )
+            if not os.path.isfile(download_path):
+                return jsonify({"ok": False, "error": "File not found."}), 404
+
+            response = await self.browser_interface.download(download_path, download_name)
 
             async def cleanup():
-                await asyncio.sleep(5)
-
                 node.decrease_downloader_count()
 
                 if archive_to_delete and os.path.isfile(archive_to_delete):
                     try:
                         os.remove(archive_to_delete)
-
                         tmp_dir = os.path.dirname(archive_to_delete)
                         if not os.listdir(tmp_dir):
                             os.rmdir(tmp_dir)
-
                     except OSError:
                         pass
 
