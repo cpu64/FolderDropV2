@@ -114,20 +114,37 @@ class WebController:
                 return jsonify({"ok": False, "error": "File not found."}), 404
 
             response = await self.browser_interface.download(download_path, download_name)
+            original_stream = response.response
 
-            async def cleanup():
-                node.decrease_downloader_count()
+            class CleanupBodyWrapper:
+                def __init__(self, stream):
+                    self.stream = stream
 
-                if archive_to_delete and os.path.isfile(archive_to_delete):
+                async def __aenter__(self):
+                    if hasattr(self.stream, "__aenter__"):
+                        await self.stream.__aenter__()
+                    return self
+
+                async def __aexit__(self, exc_type, exc_val, exc_tb):
                     try:
-                        os.remove(archive_to_delete)
-                        tmp_dir = os.path.dirname(archive_to_delete)
-                        if not os.listdir(tmp_dir):
-                            os.rmdir(tmp_dir)
-                    except OSError:
-                        pass
+                        if hasattr(self.stream, "__aexit__"):
+                            await self.stream.__aexit__(exc_type, exc_val, exc_tb)
+                    finally:
+                        node.decrease_downloader_count()
+                        if archive_to_delete and os.path.isfile(archive_to_delete):
+                            try:
+                                os.remove(archive_to_delete)
+                                tmp_dir = os.path.dirname(archive_to_delete)
+                                if not os.listdir(tmp_dir):
+                                    os.rmdir(tmp_dir)
+                            except OSError:
+                                pass
 
-            self.app.add_background_task(cleanup)
+                async def __aiter__(self):
+                    async for chunk in self.stream:
+                        yield chunk
+
+            response.response = CleanupBodyWrapper(original_stream)
 
             return response
 
