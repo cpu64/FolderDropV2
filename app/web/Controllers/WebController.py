@@ -10,6 +10,7 @@ from quart import Quart, render_template, abort, jsonify, request
 from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterface
 from app.models.settings import settings_store
 from app.web.Interfaces.BrowserInterface import BrowserInterface
+from app.models.FileSystemObject import FileSystemObject, Folder
 
 
 class WebController:
@@ -62,6 +63,11 @@ class WebController:
         async def top_menu():
             return await self.open_top_menu()
 
+        @self.app.route("/upload_file")
+        async def upload_file():
+            settings = settings_store.get_settings()
+            return jsonify({ "allow_upload": settings.allow_upload })
+
         @self.app.route("/api/menu")
         async def menu():
             return await self.open_menu()
@@ -76,6 +82,9 @@ class WebController:
         async def download_route():
             rel_path = unquote(request.args.get("path", "").strip())
             return await self.download(rel_path)
+
+    async def showFolder(self, folder: Folder):
+        os_name = platform.system()
 
     async def open_top_menu(self):
         allow = settings_store.get_settings().allow_upload
