@@ -72,6 +72,12 @@ class FileSystemObject:
         kind = "DIR" if self.is_dir else "FILE"
         return f"<FileSystemObject {kind} '{self.name}'>"
 
+    @staticmethod
+    def create_node(name="", is_dir=False, size=0, created_at=None, modified_at=None):
+        if is_dir:
+            return Folder(name=name, size=size, created_at=created_at, modified_at=modified_at)
+        return FileSystemObject(name=name, is_dir=False, size=size, created_at=created_at, modified_at=modified_at)
+
 
 class Folder(FileSystemObject):
     def __init__(self, name="", size=0, created_at=None, modified_at=None):
