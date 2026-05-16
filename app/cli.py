@@ -9,7 +9,7 @@ from app.host.controllers.main import MainWindowController
 from app.web.Controllers.WebController import WebController
 from app.host.controllers.FileController import FileController
 from app.models.settings import settings_store
-from app.models.FileSystemObject import Folder
+from app.models.Folder import Folder
 
 
 @click.group()
