@@ -80,7 +80,11 @@ class WebController:
         async def create_folder_route():
             body = await request.get_json(silent=True) or {}
             current_path = unquote(body.get("current_path", "").strip())
-            return await self.create_folder(current_path)
+
+            folder_name = body.get("folder_name") or "new_folder"
+            folder_name = folder_name.strip() or "new_folder"
+
+            return await self.create_folder(current_path, folder_name)
 
         @self.app.route("/api/download")
         async def download_route():
@@ -189,13 +193,13 @@ class WebController:
         except Exception as exc:
             return jsonify({"ok": False, "error": str(exc)}), 500
 
-    async def create_folder(self, current_path: str):
+    async def create_folder(self, current_path: str, folder_name: str):
         settings = settings_store.get_settings()
 
         if not settings.allow_upload:
             return jsonify({"ok": False, "error": "Folder creation is disabled."}), 403
 
-        rel_path = os.path.join(current_path, "new_folder") if current_path else "new_folder"
+        rel_path = os.path.join(current_path, folder_name) if current_path else folder_name
 
         try:
             full_path = os.path.join(settings_store.get_settings().path, rel_path)
@@ -204,7 +208,8 @@ class WebController:
             return jsonify({"ok": False, "error": str(exc)}), 500
 
         created = os.path.join(settings.path, rel_path)
-        return jsonify({"ok": True, "path": created})
+
+        return jsonify({"ok": True, "path": created, "folder_name": folder_name})
 
     def run(self, host="0.0.0.0", port=5000):
         config = Config()

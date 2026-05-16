@@ -804,7 +804,7 @@
         }
     });
 
-    async function createFolder() {
+    async function createFolder(folderName = "new_folder") {
         const btn = document.getElementById("btn-top-menu");
         btn.disabled = true;
 
@@ -812,12 +812,13 @@
             const res = await fetch("/api/create-folder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ current_path: CURRENT_PATH }),
+                body: JSON.stringify({ current_path: CURRENT_PATH, folder_name: folderName }),
             });
             const data = await res.json();
 
             if (data.ok) {
-                showBanner("success", `✓ Created "new_folder"`);
+                showBanner("success", `✓ Created "${data.folder_name || folderName}"`);
+
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showBanner("error", `✗ ${data.error}`);
