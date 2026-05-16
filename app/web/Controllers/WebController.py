@@ -2,12 +2,15 @@ import asyncio
 import os
 import platform
 import psutil
+from pathlib import Path
 from urllib.parse import unquote
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from quart import Quart, render_template, abort, jsonify, request
+from quart import Quart, render_template, abort, jsonify, request, send_file, Response
 
+from quart import request, jsonify
 from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterface
+from app.host.controllers.FileReceiveController import FileReceiveController
 from app.models.settings import settings_store
 from app.web.Interfaces.BrowserInterface import BrowserInterface
 from app.models.FileSystemObject import FileSystemObject, Folder
@@ -19,6 +22,7 @@ class WebController:
         self.owner_file_system_interface = OwnerFileSystemInterface()
         self.browser_interface = BrowserInterface()
         self.dir_cache = dir_cache
+        self.rec_con = FileReceiveController()
 
         self.os_name = platform.system()
         path = settings_store.get_settings().path or "."
@@ -63,7 +67,7 @@ class WebController:
         async def top_menu():
             return await self.open_top_menu()
 
-        @self.app.route("/upload_file")
+        @self.app.route("/api/upload_file")
         async def upload_file():
             settings = settings_store.get_settings()
             return jsonify({ "allow_upload": settings.allow_upload })
@@ -82,6 +86,29 @@ class WebController:
         async def download_route():
             rel_path = unquote(request.args.get("path", "").strip())
             return await self.download(rel_path)
+
+        BASE_DIR = Path(__file__).resolve().parent
+
+        @self.app.route("/FileValidationController.js")
+        async def file_validation_controller():
+            js = (BASE_DIR / "FileValidationController.js").read_text()
+            return Response(js, mimetype="application/javascript")
+
+        @self.app.route("/FileUploadController.js")
+        async def file_upload_controller():
+            js = (BASE_DIR / "FileUploadController.js").read_text()
+            return Response(js, mimetype="application/javascript")
+
+        @self.app.route("/api/recieve-metadata", methods=["POST"])
+        async def recieve_metadata():
+            data = await request.get_json()
+            return self.rec_con.recieve_metadata(data)
+
+        @self.app.route("/api/recieve-part", methods=["POST"])
+        async def recieve_part():
+            form = await request.form
+            files = await request.files
+            return self.rec_con.recieve_part(form, files)
 
     async def showFolder(self, folder: Folder):
         os_name = platform.system()

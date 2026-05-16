@@ -745,14 +745,13 @@
 <script>
     window.OS_NAME = {{ os_name | tojson }};
     window.FS_TYPE = {{ fs_type | tojson }};
-</script>
-<script src="FileUploadController.js"></script>
-<script src="FileValidationController.js"></script>
-<script>
     const CURRENT_PATH = location.pathname.startsWith("/browse/")
     ? location.pathname.slice("/browse/".length)
     : "";
-
+</script>
+<script src="/FileUploadController.js"></script>
+<script src="/FileValidationController.js"></script>
+<script>
     const dropdown = document.getElementById("top-menu-dropdown");
     let _menuOpen = false;
 
@@ -899,14 +898,32 @@
     const popupHeader = document.getElementById("popupHeader");
     const popupText = document.getElementById("popupText");
 
-    function openPopup(name, type) {
-      popupHeader.textContent = `${type} to be uploaded:`;
-      popupText.textContent = `${name}`;
-      popupOverlay.classList.add("active");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+
+    let pendingUploadFile = null;
+
+    function openPopup(header, text, confirmText = "OK", onConfirm = null) {
+        popupHeader.textContent = header;
+        popupText.innerHTML = text;
+
+        confirmBtn.textContent = confirmText;
+
+        confirmBtn.onclick = () => {
+            if (onConfirm) {
+                onConfirm();
+            }
+
+            closePopup();
+        };
+
+        cancelBtn.onclick = closePopup;
+
+        popupOverlay.classList.add("active");
     }
 
     function closePopup() {
-      popupOverlay.classList.remove("active");
+        popupOverlay.classList.remove("active");
     }
 
     document.getElementById("confirmBtn").addEventListener("click", closePopup);
@@ -915,73 +932,102 @@
     let dragCounter = 0;
 
     window.addEventListener("dragenter", (e) => {
-      e.preventDefault();
-      dragCounter++;
-      document.body.classList.add("drag-over");
+        e.preventDefault();
+        dragCounter++;
+        document.body.classList.add("drag-over");
     });
 
     window.addEventListener("dragover", (e) => {
-      e.preventDefault();
+        e.preventDefault();
     });
 
     window.addEventListener("dragleave", (e) => {
-      e.preventDefault();
+        e.preventDefault();
 
-      dragCounter--;
+        dragCounter--;
 
-      if (dragCounter <= 0) {
-        document.body.classList.remove("drag-over");
-        dragCounter = 0;
-      }
+        if (dragCounter <= 0) {
+            document.body.classList.remove("drag-over");
+            dragCounter = 0;
+        }
     });
 
     window.addEventListener("drop", async (e) => {
-      e.preventDefault();
+        e.preventDefault();
 
-      dragCounter = 0;
-      document.body.classList.remove("drag-over");
+        dragCounter = 0;
+        document.body.classList.remove("drag-over");
 
-      const items = e.dataTransfer?.items;
+        const items = e.dataTransfer?.items;
 
-      if (!items || !items.length) {
-        return;
-      }
-
-      try {
-        const response = await fetch("/upload_file");
-        const data = await response.json();
-
-        if (!data.allow_upload) {
-          popupHeader.textContent = "Upload blocked";
-          popupText.textContent = "File uploads are disabled on this server.";
-          popupOverlay.classList.add("active");
-          return;
+        if (!items || !items.length) {
+            return;
         }
-      } catch (err) {
-        popupHeader.textContent = "Server error";
-        popupText.textContent = "Failed to verify upload permissions.";
-        popupOverlay.classList.add("active");
-        return;
-      }
 
-      const item = items[0];
+        try {
+            const response = await fetch("/api/upload_file");
+            const data = await response.json();
 
-      let entry = null;
+            if (!data.allow_upload) {
+                openPopup(
+                    "Upload blocked",
+                    "File uploads are disabled on this server."
+                );
 
-      if (item.webkitGetAsEntry) {
-        entry = item.webkitGetAsEntry();
-      }
+                return;
+            }
+        } catch (err) {
+            openPopup(
+                "Server error",
+                "Failed to verify upload permissions."
+            );
 
-      if (entry) {
-        const type = entry.isDirectory ? "Folder" : "File";
-        openPopup(entry.name, type);
-      } else {
+            return;
+        }
+
+        const item = items[0];
+
         const file = item.getAsFile();
 
-        if (file) {
-          openPopup(file.name, "File");
+        if (!file) {
+            openPopup(
+                "Unsupported item",
+                "Only files are currently supported."
+            );
+
+            return;
         }
-      }
+
+        pendingUploadFile = file;
+
+        openPopup(
+            "Upload file",
+            `
+            <strong>${file.name}</strong><br><br>
+            Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
+            `,
+            "Upload",
+            async () => {
+                const uploader = new FileUploadController(file);
+
+                const result = await uploader.start_uploading();
+
+                if (result.ok) {
+                    openPopup(
+                        "Upload started",
+                        `
+                        File: <strong>${file.name}</strong><br>
+                        Parts: ${result.partCount}
+                        `
+                    );
+                } else {
+                    openPopup(
+                        "Error",
+                        result.errors.join("<br>")
+                    );
+                }
+            }
+        );
     });
 </script>
 </body>
