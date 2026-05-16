@@ -953,6 +953,185 @@
         }
     });
 
+    async function handleFileUpload(file) {
+        pendingUploadFile = file;
+
+        openPopup(
+            "Upload file",
+            `
+            <strong>${file.name}</strong><br><br>
+            Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
+            `,
+            "Upload",
+            async () => {
+                const uploader = new FileUploadController(file);
+
+                const result = await uploader.start_uploading();
+
+                if (result.ok) {
+                    openPopup(
+                        "Upload started",
+                        `
+                        File: <strong>${file.name}</strong><br>
+                        Parts: ${result.partCount}
+                        `
+                    );
+                } else {
+                    openPopup(
+                        "Error",
+                        result.errors.join("<br>")
+                    );
+                }
+            }
+        );
+    }
+
+    async function handleFolderUpload(folder) {
+        const entries = [];
+
+        // ─────────────────────────────
+        // 1. Flatten directory tree
+        // ─────────────────────────────
+        async function walk(dirEntry, basePath = "") {
+            const reader = dirEntry.createReader();
+
+            const readAll = async () => {
+                const results = [];
+                while (true) {
+                    const batch = await new Promise((resolve, reject) =>
+                        reader.readEntries(resolve, reject)
+                    );
+                    if (!batch.length) break;
+                    results.push(...batch);
+                }
+                return results;
+            };
+
+            const children = await readAll();
+
+            const currentPath = basePath
+                ? `${basePath}/${dirEntry.name}`
+                : dirEntry.name;
+
+            for (const child of children) {
+
+                if (child.isDirectory) {
+                    entries.push({
+                        path: `${currentPath}/${child.name}/`,
+                        type: "folder",
+                        entry: child,
+                    });
+
+                    await walk(child, currentPath);
+
+                } else {
+                    entries.push({
+                        path: `${currentPath}/${child.name}`,
+                        type: "file",
+                        entry: child,
+                    });
+                }
+            }
+        }
+
+        await walk(folder, "");
+
+        entries.unshift({
+            path: `${folder.name}/`,
+            type: "folder",
+            entry: folder,
+        });
+
+        // ─────────────────────────────
+        // 2. Sort (folders first, shallow first)
+        // ─────────────────────────────
+        entries.sort((a, b) => {
+            if (a.type !== b.type) {
+                return a.type === "folder" ? -1 : 1;
+            }
+
+            return a.path.localeCompare(b.path);
+        });
+
+        // ─────────────────────────────
+        // 3. Execute sequentially
+        // ─────────────────────────────
+        for (const item of entries) {
+
+            // ────────────────
+            // FOLDER HANDLING
+            // ────────────────
+            if (item.type === "folder") {
+
+                const folderPath = item.path.slice(0, -1); // remove trailing "/"
+
+                const validator = new FileValidationController(folderPath);
+
+                if (!validator.validatePath()) {
+                    openPopup(
+                        "Invalid folder path",
+                        validator.errors.join("<br>")
+                    );
+                    return;
+                }
+
+                const res = await fetch("/api/create-folder", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        current_path: CURRENT_PATH,
+                        folder_name: folderPath,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (!data.ok) {
+                    openPopup(
+                        "Folder creation failed",
+                        `${folderPath}<br><br>${data.error}`
+                    );
+                    return;
+                }
+            }
+
+            // ────────────────
+            // FILE HANDLING
+            // ────────────────
+            else {
+
+                const file = await new Promise((resolve) =>
+                    item.entry.file(resolve)
+                );
+
+                // IMPORTANT: override path inside uploader
+                const uploader = new FileUploadController(file);
+
+                // inject correct structure path
+                uploader.filepath = CURRENT_PATH
+                    ? `${CURRENT_PATH}/${item.path}`
+                    : item.path;
+
+                const result = await uploader.start_uploading();
+
+                if (!result.ok) {
+                    openPopup(
+                        "Upload failed",
+                        `${item.path}<br><br>${result.errors.join("<br>")}`
+                    );
+                    return;
+                }
+            }
+        }
+
+        openPopup(
+            "Upload complete",
+            `Folder <strong>${folder.name}</strong> uploaded successfully.`
+        );
+    }
+
     window.addEventListener("drop", async (e) => {
         e.preventDefault();
 
@@ -988,7 +1167,36 @@
 
         const item = items[0];
 
-        const file = item.getAsFile();
+        let entry = null;
+
+        if (item.webkitGetAsEntry) {
+            entry = item.webkitGetAsEntry();
+        }
+
+        if (entry && entry.isDirectory) {
+            openPopup(
+                "Upload folder",
+                `<strong>${entry.name}</strong><br><br>
+                Uploading folders is being processed.`,
+                "Continue",
+                async () => {
+                    await handleFolderUpload(entry);
+                }
+            );
+
+            return;
+        }
+
+        let file = null;
+
+        if (entry && entry.isFile) {
+            entry.file((f) => {
+                handleFileUpload(f);
+            });
+            return;
+        }
+
+        file = item.getAsFile();
 
         if (!file) {
             openPopup(
@@ -999,36 +1207,7 @@
             return;
         }
 
-        pendingUploadFile = file;
-
-        openPopup(
-            "Upload file",
-            `
-            <strong>${file.name}</strong><br><br>
-            Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
-            `,
-            "Upload",
-            async () => {
-                const uploader = new FileUploadController(file);
-
-                const result = await uploader.start_uploading();
-
-                if (result.ok) {
-                    openPopup(
-                        "Upload started",
-                        `
-                        File: <strong>${file.name}</strong><br>
-                        Parts: ${result.partCount}
-                        `
-                    );
-                } else {
-                    openPopup(
-                        "Error",
-                        result.errors.join("<br>")
-                    );
-                }
-            }
-        );
+        handleFileUpload(file);
     });
 </script>
 </body>
