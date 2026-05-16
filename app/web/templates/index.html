@@ -743,89 +743,15 @@
 </div>
 
 <script>
-    const OS_NAME = {{ os_name | tojson }};
-    const FS_TYPE = {{ fs_type | tojson }};
-
-    class FileValidationController {
-      constructor(filepath) {
-        this.filepath = filepath;
-        this.errors = [];
-      }
-
-      validatePath() {
-        if (this.isAbsolutePath(this.filepath)) return false;
-
-        const parts = this.splitPathIntoParts();
-        for (const part of parts) {
-          if (part === "..") {
-            this.registerError("Path must not contain '..'");
-          } else {
-            if (this.verifyPathAgainstOS(part)) {
-              if (!this.verifyPathAgainstFileSystem(part)) {
-                this.registerError(`Path part '${part}' isn't valid in this file system.`);
-              }
-            } else {
-              this.registerError(`Path part '${part}' is not valid on this OS.`);
-            }
-          }
-        }
-
-        return this.errors.length === 0;
-      }
-
-      isAbsolutePath(filepath) {
-        const isAbsolute =
-          /^[A-Za-z]:[\\\/]/.test(filepath) ||
-          filepath.startsWith("\\\\") ||
-          filepath.startsWith("/");
-
-        if (isAbsolute) {
-          this.registerError("Path must not be absolute.");
-          return true;
-        }
-        return false;
-      }
-
-      splitPathIntoParts() {
-        const sep = OS_NAME === "Windows" ? "\\" : "/";
-        return this.filepath.split(sep);
-      }
-
-      registerError(message) {
-        this.errors.push(message);
-      }
-
-      verifyPathAgainstOS(part) {
-        if (!part) return false;
-        if (part.includes("\x00")) return false;
-
-        if (OS_NAME === "Windows") {
-          if (/[<>:"/\\|?*\x00-\x1f]/.test(part)) return false;
-          if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..+)?$/i.test(part)) return false;
-        }
-
-        return true;
-      }
-
-      verifyPathAgainstFileSystem(part, maxLen = 255) {
-        if (!part) return false;
-
-        const encoded = new TextEncoder().encode(part);
-        if (encoded.length > maxLen) return false;
-
-        if (FS_TYPE.includes("FAT") || FS_TYPE.includes("NTFS")) {
-          if (part.endsWith(".") || part.endsWith(" ")) return false;
-          if (/[<>:"/\\|?*\x00-\x1f]/.test(part)) return false;
-        }
-
-        return true;
-      }
-    }
-
+    window.OS_NAME = {{ os_name | tojson }};
+    window.FS_TYPE = {{ fs_type | tojson }};
     const CURRENT_PATH = location.pathname.startsWith("/browse/")
     ? location.pathname.slice("/browse/".length)
     : "";
-
+</script>
+<script src="/FileUploadController.js"></script>
+<script src="/FileValidationController.js"></script>
+<script>
     const dropdown = document.getElementById("top-menu-dropdown");
     let _menuOpen = false;
 
@@ -878,7 +804,7 @@
         }
     });
 
-    async function createFolder() {
+    async function createFolder(folderName = "new_folder") {
         const btn = document.getElementById("btn-top-menu");
         btn.disabled = true;
 
@@ -886,12 +812,13 @@
             const res = await fetch("/api/create-folder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ current_path: CURRENT_PATH }),
+                body: JSON.stringify({ current_path: CURRENT_PATH, folder_name: folderName }),
             });
             const data = await res.json();
 
             if (data.ok) {
-                showBanner("success", `✓ Created "new_folder"`);
+                showBanner("success", `✓ Created "${data.folder_name || folderName}"`);
+
                 setTimeout(() => location.reload(), 1000);
             } else {
                 showBanner("error", `✗ ${data.error}`);
@@ -972,14 +899,32 @@
     const popupHeader = document.getElementById("popupHeader");
     const popupText = document.getElementById("popupText");
 
-    function openPopup(name, type) {
-      popupHeader.textContent = `${type} to be uploaded:`;
-      popupText.textContent = `${name}`;
-      popupOverlay.classList.add("active");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+
+    let pendingUploadFile = null;
+
+    function openPopup(header, text, confirmText = "OK", onConfirm = null) {
+        popupHeader.textContent = header;
+        popupText.innerHTML = text;
+
+        confirmBtn.textContent = confirmText;
+
+        confirmBtn.onclick = () => {
+            if (onConfirm) {
+                onConfirm();
+            }
+
+            closePopup();
+        };
+
+        cancelBtn.onclick = closePopup;
+
+        popupOverlay.classList.add("active");
     }
 
     function closePopup() {
-      popupOverlay.classList.remove("active");
+        popupOverlay.classList.remove("active");
     }
 
     document.getElementById("confirmBtn").addEventListener("click", closePopup);
@@ -988,54 +933,281 @@
     let dragCounter = 0;
 
     window.addEventListener("dragenter", (e) => {
-      e.preventDefault();
-      dragCounter++;
-      document.body.classList.add("drag-over");
+        e.preventDefault();
+        dragCounter++;
+        document.body.classList.add("drag-over");
     });
 
     window.addEventListener("dragover", (e) => {
-      e.preventDefault();
+        e.preventDefault();
     });
 
     window.addEventListener("dragleave", (e) => {
-      e.preventDefault();
+        e.preventDefault();
 
-      dragCounter--;
+        dragCounter--;
 
-      if (dragCounter <= 0) {
-        document.body.classList.remove("drag-over");
-        dragCounter = 0;
-      }
+        if (dragCounter <= 0) {
+            document.body.classList.remove("drag-over");
+            dragCounter = 0;
+        }
     });
 
-    window.addEventListener("drop", (e) => {
-      e.preventDefault();
+    async function handleFileUpload(file) {
+        pendingUploadFile = file;
 
-      dragCounter = 0;
-      document.body.classList.remove("drag-over");
+        openPopup(
+            "Upload file",
+            `
+            <strong>${file.name}</strong><br><br>
+            Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
+            `,
+            "Upload",
+            async () => {
+                const uploader = new FileUploadController(file);
 
-      const items = e.dataTransfer.items;
+                const result = await uploader.start_uploading();
 
-      if (!items || !items.length) return;
+                if (result.ok) {
+                    openPopup(
+                        "Upload started",
+                        `
+                        File: <strong>${file.name}</strong><br>
+                        Parts: ${result.partCount}
+                        `
+                    );
+                } else {
+                    openPopup(
+                        "Error",
+                        result.errors.join("<br>")
+                    );
+                }
+            }
+        );
+    }
 
-      const item = items[0];
+    async function handleFolderUpload(folder) {
+        const entries = [];
 
-      let entry = null;
+        // ─────────────────────────────
+        // 1. Flatten directory tree
+        // ─────────────────────────────
+        async function walk(dirEntry, basePath = "") {
+            const reader = dirEntry.createReader();
 
-      if (item.webkitGetAsEntry) {
-        entry = item.webkitGetAsEntry();
-      }
+            const readAll = async () => {
+                const results = [];
+                while (true) {
+                    const batch = await new Promise((resolve, reject) =>
+                        reader.readEntries(resolve, reject)
+                    );
+                    if (!batch.length) break;
+                    results.push(...batch);
+                }
+                return results;
+            };
 
-      if (entry) {
-        const type = entry.isDirectory ? "Folder" : "File";
-        openPopup(entry.name, type);
-      } else {
-        const file = item.getAsFile();
+            const children = await readAll();
 
-        if (file) {
-          openPopup(file.name, "File");
+            const currentPath = basePath
+                ? `${basePath}/${dirEntry.name}`
+                : dirEntry.name;
+
+            for (const child of children) {
+
+                if (child.isDirectory) {
+                    entries.push({
+                        path: `${currentPath}/${child.name}/`,
+                        type: "folder",
+                        entry: child,
+                    });
+
+                    await walk(child, currentPath);
+
+                } else {
+                    entries.push({
+                        path: `${currentPath}/${child.name}`,
+                        type: "file",
+                        entry: child,
+                    });
+                }
+            }
         }
-      }
+
+        await walk(folder, "");
+
+        entries.unshift({
+            path: `${folder.name}/`,
+            type: "folder",
+            entry: folder,
+        });
+
+        // ─────────────────────────────
+        // 2. Sort (folders first, shallow first)
+        // ─────────────────────────────
+        entries.sort((a, b) => {
+            if (a.type !== b.type) {
+                return a.type === "folder" ? -1 : 1;
+            }
+
+            return a.path.localeCompare(b.path);
+        });
+
+        // ─────────────────────────────
+        // 3. Execute sequentially
+        // ─────────────────────────────
+        for (const item of entries) {
+
+            // ────────────────
+            // FOLDER HANDLING
+            // ────────────────
+            if (item.type === "folder") {
+
+                const folderPath = item.path.slice(0, -1); // remove trailing "/"
+
+                const validator = new FileValidationController(folderPath);
+
+                if (!validator.validatePath()) {
+                    openPopup(
+                        "Invalid folder path",
+                        validator.errors.join("<br>")
+                    );
+                    return;
+                }
+
+                const res = await fetch("/api/create-folder", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        current_path: CURRENT_PATH,
+                        folder_name: folderPath,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (!data.ok) {
+                    openPopup(
+                        "Folder creation failed",
+                        `${folderPath}<br><br>${data.error}`
+                    );
+                    return;
+                }
+            }
+
+            // ────────────────
+            // FILE HANDLING
+            // ────────────────
+            else {
+
+                const file = await new Promise((resolve) =>
+                    item.entry.file(resolve)
+                );
+
+                // IMPORTANT: override path inside uploader
+                const uploader = new FileUploadController(file);
+
+                // inject correct structure path
+                uploader.filepath = CURRENT_PATH
+                    ? `${CURRENT_PATH}/${item.path}`
+                    : item.path;
+
+                const result = await uploader.start_uploading();
+
+                if (!result.ok) {
+                    openPopup(
+                        "Upload failed",
+                        `${item.path}<br><br>${result.errors.join("<br>")}`
+                    );
+                    return;
+                }
+            }
+        }
+
+        openPopup(
+            "Upload complete",
+            `Folder <strong>${folder.name}</strong> uploaded successfully.`
+        );
+    }
+
+    window.addEventListener("drop", async (e) => {
+        e.preventDefault();
+
+        dragCounter = 0;
+        document.body.classList.remove("drag-over");
+
+        const items = e.dataTransfer?.items;
+
+        if (!items || !items.length) {
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/upload_file");
+            const data = await response.json();
+
+            if (!data.allow_upload) {
+                openPopup(
+                    "Upload blocked",
+                    "File uploads are disabled on this server."
+                );
+
+                return;
+            }
+        } catch (err) {
+            openPopup(
+                "Server error",
+                "Failed to verify upload permissions."
+            );
+
+            return;
+        }
+
+        const item = items[0];
+
+        let entry = null;
+
+        if (item.webkitGetAsEntry) {
+            entry = item.webkitGetAsEntry();
+        }
+
+        if (entry && entry.isDirectory) {
+            openPopup(
+                "Upload folder",
+                `<strong>${entry.name}</strong><br><br>
+                Uploading folders is being processed.`,
+                "Continue",
+                async () => {
+                    await handleFolderUpload(entry);
+                }
+            );
+
+            return;
+        }
+
+        let file = null;
+
+        if (entry && entry.isFile) {
+            entry.file((f) => {
+                handleFileUpload(f);
+            });
+            return;
+        }
+
+        file = item.getAsFile();
+
+        if (!file) {
+            openPopup(
+                "Unsupported item",
+                "Only files are currently supported."
+            );
+
+            return;
+        }
+
+        handleFileUpload(file);
     });
 </script>
 </body>

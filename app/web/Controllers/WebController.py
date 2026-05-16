@@ -2,14 +2,18 @@ import asyncio
 import os
 import platform
 import psutil
+from pathlib import Path
 from urllib.parse import unquote
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from quart import Quart, render_template, abort, jsonify, request
+from quart import Quart, render_template, abort, jsonify, request, send_file, Response
 
+from quart import request, jsonify
 from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterface
+from app.host.controllers.FileReceiveController import FileReceiveController
 from app.models.settings import settings_store
 from app.web.Interfaces.BrowserInterface import BrowserInterface
+from app.models.FileSystemObject import FileSystemObject, Folder
 
 
 class WebController:
@@ -18,6 +22,7 @@ class WebController:
         self.owner_file_system_interface = OwnerFileSystemInterface()
         self.browser_interface = BrowserInterface()
         self.dir_cache = dir_cache
+        self.rec_con = FileReceiveController()
 
         self.os_name = platform.system()
         path = settings_store.get_settings().path or "."
@@ -62,6 +67,11 @@ class WebController:
         async def top_menu():
             return await self.open_top_menu()
 
+        @self.app.route("/api/upload_file")
+        async def upload_file():
+            settings = settings_store.get_settings()
+            return jsonify({ "allow_upload": settings.allow_upload })
+
         @self.app.route("/api/menu")
         async def menu():
             return await self.open_menu()
@@ -70,12 +80,42 @@ class WebController:
         async def create_folder_route():
             body = await request.get_json(silent=True) or {}
             current_path = unquote(body.get("current_path", "").strip())
-            return await self.create_folder(current_path)
+
+            folder_name = body.get("folder_name") or "new_folder"
+            folder_name = folder_name.strip() or "new_folder"
+
+            return await self.create_folder(current_path, folder_name)
 
         @self.app.route("/api/download")
         async def download_route():
             rel_path = unquote(request.args.get("path", "").strip())
             return await self.download(rel_path)
+
+        BASE_DIR = Path(__file__).resolve().parent
+
+        @self.app.route("/FileValidationController.js")
+        async def file_validation_controller():
+            js = (BASE_DIR / "FileValidationController.js").read_text()
+            return Response(js, mimetype="application/javascript")
+
+        @self.app.route("/FileUploadController.js")
+        async def file_upload_controller():
+            js = (BASE_DIR / "FileUploadController.js").read_text()
+            return Response(js, mimetype="application/javascript")
+
+        @self.app.route("/api/recieve-metadata", methods=["POST"])
+        async def recieve_metadata():
+            data = await request.get_json()
+            return self.rec_con.recieve_metadata(data)
+
+        @self.app.route("/api/recieve-part", methods=["POST"])
+        async def recieve_part():
+            form = await request.form
+            files = await request.files
+            return self.rec_con.recieve_part(form, files)
+
+    async def showFolder(self, folder: Folder):
+        os_name = platform.system()
 
     async def open_top_menu(self):
         allow = settings_store.get_settings().allow_upload
@@ -153,13 +193,13 @@ class WebController:
         except Exception as exc:
             return jsonify({"ok": False, "error": str(exc)}), 500
 
-    async def create_folder(self, current_path: str):
+    async def create_folder(self, current_path: str, folder_name: str):
         settings = settings_store.get_settings()
 
         if not settings.allow_upload:
             return jsonify({"ok": False, "error": "Folder creation is disabled."}), 403
 
-        rel_path = os.path.join(current_path, "new_folder") if current_path else "new_folder"
+        rel_path = os.path.join(current_path, folder_name) if current_path else folder_name
 
         try:
             full_path = os.path.join(settings_store.get_settings().path, rel_path)
@@ -168,7 +208,8 @@ class WebController:
             return jsonify({"ok": False, "error": str(exc)}), 500
 
         created = os.path.join(settings.path, rel_path)
-        return jsonify({"ok": True, "path": created})
+
+        return jsonify({"ok": True, "path": created, "folder_name": folder_name})
 
     def run(self, host="0.0.0.0", port=5000):
         config = Config()
