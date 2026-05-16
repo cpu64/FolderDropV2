@@ -33,7 +33,7 @@ class FileValidationController:
         return True
 
     def split_path_into_parts(self) -> list:
-        return self.filepath.strip(os.sep).split(os.sep)
+        return self.filepath.strip("/").split("/")
 
     def register_error(self, message: str):
         self.errors.append(message)

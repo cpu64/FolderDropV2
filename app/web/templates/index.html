@@ -746,7 +746,7 @@
     window.OS_NAME = {{ os_name | tojson }};
     window.FS_TYPE = {{ fs_type | tojson }};
     const CURRENT_PATH = location.pathname.startsWith("/browse/")
-    ? location.pathname.slice("/browse/".length)
+    ? decodeURIComponent(location.pathname.slice("/browse/".length))
     : "";
 </script>
 <script src="/FileUploadController.js"></script>

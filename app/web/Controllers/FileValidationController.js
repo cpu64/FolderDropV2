@@ -39,8 +39,7 @@ class FileValidationController {
     }
 
     splitPathIntoParts() {
-        const sep = window.OS_NAME === "Windows" ? "\\" : "/";
-        return this.filepath.split(sep);
+    return this.filepath.split("/");
     }
 
     registerError(message) {
