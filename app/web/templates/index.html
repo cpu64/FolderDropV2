@@ -2,1214 +2,1226 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ folder.name }} — FolderDropV2</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <style>
         :root {
-          --bg: #0f0f10;
-          --surface: #17171a;
-          --border: #2a2a2f;
-          --accent: #4f9eff;
-          --accent-dim: #1e3d66;
-          --fg: #e2e2e5;
-          --fg-dim: #6b6b78;
-          --fg-muted: #3a3a42;
-          --folder: #f0a732;
-          --file: #4f9eff;
-          --danger: #ff5f57;
-          --radius: 6px;
-          --mono: 'IBM Plex Mono', monospace;
-          --sans: 'IBM Plex Sans', sans-serif;
+            --bg: #0f0f10;
+            --surface: #17171a;
+            --border: #2a2a2f;
+            --accent: #4f9eff;
+            --accent-dim: #1e3d66;
+            --fg: #e2e2e5;
+            --fg-dim: #6b6b78;
+            --fg-muted: #3a3a42;
+            --folder: #f0a732;
+            --file: #4f9eff;
+            --danger: #ff5f57;
+            --radius: 6px;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'IBM Plex Sans', sans-serif;
         }
 
         *,
         *::before,
         *::after {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         html,
         body {
-          height: 100%;
-          background: var(--bg);
-          color: var(--fg);
-          font-family: var(--sans);
-          font-size: 14px;
-          line-height: 1.6;
+            height: 100%;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--sans);
+            font-size: 14px;
+            line-height: 1.6;
         }
 
         /* ── Layout ─────────────────────────────── */
         .shell {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* ── Main content ────────────────────────── */
         .content {
-          flex: 1;
-          padding: 28px 28px 60px;
-          max-width: 1100px;
-          width: 100%;
-          margin: 0 auto;
+            flex: 1;
+            padding: 28px 28px 60px;
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
         }
 
         /* ── Top bar ─────────────────────────────── */
         .top-bar {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
         }
 
         .btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-family: var(--mono);
-          font-size: 12px;
-          font-weight: 500;
-          padding: 6px 14px;
-          border-radius: var(--radius);
-          border: 1px solid var(--border);
-          background: var(--surface);
-          color: var(--fg);
-          cursor: pointer;
-          transition: border-color .15s, color .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--fg);
+            cursor: pointer;
+            transition: border-color .15s, color .15s;
         }
 
         .btn:hover {
-          border-color: var(--accent);
-          color: var(--accent);
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .btn:disabled {
-          opacity: .4;
-          cursor: not-allowed;
+            opacity: .4;
+            cursor: not-allowed;
         }
 
         /* ── Inline result banner ────────────────── */
         .banner {
-          display: none;
-          font-family: var(--mono);
-          font-size: 12px;
-          padding: 6px 12px;
-          border-radius: var(--radius);
+            display: none;
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: var(--radius);
         }
 
         .banner.success {
-          display: inline-block;
-          background: rgba(79,255,140,.08);
-          color: #4fda8a;
-          border: 1px solid rgba(79,255,140,.18);
+            display: inline-block;
+            background: rgba(79, 255, 140, .08);
+            color: #4fda8a;
+            border: 1px solid rgba(79, 255, 140, .18);
         }
 
         .banner.error {
-          display: inline-block;
-          background: rgba(255,95,87,.08);
-          color: var(--danger);
-          border: 1px solid rgba(255,95,87,.18);
+            display: inline-block;
+            background: rgba(255, 95, 87, .08);
+            color: var(--danger);
+            border: 1px solid rgba(255, 95, 87, .18);
         }
 
         /* ── Top-menu dropdown ───────────────────── */
         .menu-wrap {
-          position: relative;
-          display: inline-block;
+            position: relative;
+            display: inline-block;
         }
 
         .menu-btn-caret {
-          width: 20px;
-          border-left: 1px solid var(--border);
-          padding-left: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 2px;
+            width: 20px;
+            border-left: 1px solid var(--border);
+            padding-left: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 2px;
         }
 
         .dropdown {
-          display: none;
-          position: absolute;
-          top: calc(100% + 6px);
-          left: 0;
-          min-width: 200px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          box-shadow: 0 8px 24px rgba(0,0,0,.45);
-          z-index: 50;
-          overflow: hidden;
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 200px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+            z-index: 50;
+            overflow: hidden;
         }
 
         .dropdown.open {
-          display: block;
+            display: block;
         }
 
         .dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          width: 100%;
-          padding: 9px 14px;
-          font-family: var(--mono);
-          font-size: 12px;
-          color: var(--fg);
-          background: none;
-          border: none;
-          cursor: pointer;
-          text-align: left;
-          transition: background .1s;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            width: 100%;
+            padding: 9px 14px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--fg);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: background .1s;
         }
 
         .dropdown-item:hover {
-          background: rgba(79,158,255,.08);
-          color: var(--accent);
+            background: rgba(79, 158, 255, .08);
+            color: var(--accent);
         }
 
         .dropdown-empty {
-          padding: 10px 14px;
-          font-family: var(--mono);
-          font-size: 11px;
-          color: var(--fg-muted);
-          letter-spacing: .04em;
+            padding: 10px 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--fg-muted);
+            letter-spacing: .04em;
         }
 
         /* ── Folder info strip ───────────────────── */
         .folder-meta {
-          display: flex;
-          align-items: baseline;
-          gap: 20px;
-          margin-bottom: 22px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid var(--border);
-          flex-wrap: wrap;
+            display: flex;
+            align-items: baseline;
+            gap: 20px;
+            margin-bottom: 22px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
         }
 
         .folder-meta h1 {
-          font-family: var(--mono);
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--fg);
-          letter-spacing: -.01em;
+            font-family: var(--mono);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--fg);
+            letter-spacing: -.01em;
         }
 
         .meta-pill {
-          font-family: var(--mono);
-          font-size: 11px;
-          color: var(--fg-dim);
-          background: var(--border);
-          border-radius: 999px;
-          padding: 2px 10px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--fg-dim);
+            background: var(--border);
+            border-radius: 999px;
+            padding: 2px 10px;
         }
 
         /* ── Table ───────────────────────────────── */
         .file-table {
-          width: 100%;
-          border-collapse: collapse;
+            width: 100%;
+            border-collapse: collapse;
         }
 
         .file-table thead tr {
-          border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
 
         .file-table th {
-          font-family: var(--mono);
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: .12em;
-          text-transform: uppercase;
-          color: var(--fg-dim);
-          padding: 6px 12px 10px;
-          text-align: left;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--fg-dim);
+            padding: 6px 12px 10px;
+            text-align: left;
         }
 
         .file-table th:last-child {
-          text-align: right;
+            text-align: right;
         }
 
         .file-table tbody tr {
-          border-bottom: 1px solid var(--fg-muted);
-          transition: background .12s;
+            border-bottom: 1px solid var(--fg-muted);
+            transition: background .12s;
         }
 
         .file-table tbody tr:last-child {
-          border-bottom: none;
+            border-bottom: none;
         }
 
         .file-table tbody tr:hover {
-          background: var(--surface);
+            background: var(--surface);
         }
 
         .file-table td {
-          padding: 11px 12px;
-          vertical-align: middle;
+            padding: 11px 12px;
+            vertical-align: middle;
         }
 
         /* ── Icon cell ───────────────────────────── */
         .cell-icon {
-          width: 36px;
-          padding-right: 0;
+            width: 36px;
+            padding-right: 0;
         }
 
         .icon {
-          width: 28px;
-          height: 28px;
-          border-radius: 5px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         .icon-folder {
-          background: rgba(240, 167, 50, .12);
-          color: var(--folder);
+            background: rgba(240, 167, 50, .12);
+            color: var(--folder);
         }
 
         .icon-file {
-          background: rgba(79, 158, 255, .1);
-          color: var(--file);
+            background: rgba(79, 158, 255, .1);
+            color: var(--file);
         }
 
         /* ── Name cell ───────────────────────────── */
         .cell-name {
-          min-width: 180px;
+            min-width: 180px;
         }
 
         .row-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 0;
-          font-family: var(--mono);
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--fg);
-          text-decoration: none;
-          transition: color .12s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0;
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--fg);
+            text-decoration: none;
+            transition: color .12s;
         }
 
         .row-link:hover {
-          color: var(--accent);
+            color: var(--accent);
         }
 
         .row-name-plain {
-          font-family: var(--mono);
-          font-size: 13px;
-          font-weight: 400;
-          color: var(--fg);
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--fg);
         }
 
         /* ── Badge ───────────────────────────────── */
         .badge {
-          font-family: var(--mono);
-          font-size: 10px;
-          letter-spacing: .06em;
-          border-radius: 3px;
-          padding: 1px 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .06em;
+            border-radius: 3px;
+            padding: 1px 6px;
         }
 
         .badge-folder {
-          background: rgba(240, 167, 50, .12);
-          color: var(--folder);
+            background: rgba(240, 167, 50, .12);
+            color: var(--folder);
         }
 
         .badge-file {
-          background: rgba(79, 158, 255, .1);
-          color: var(--file);
+            background: rgba(79, 158, 255, .1);
+            color: var(--file);
         }
 
         /* ── Numeric / meta cells ────────────────── */
         .cell-size,
         .cell-modified,
         .cell-items {
-          font-family: var(--mono);
-          font-size: 12px;
-          color: var(--fg-dim);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--fg-dim);
         }
 
         .cell-size,
         .cell-items {
-          white-space: nowrap;
+            white-space: nowrap;
         }
 
         .cell-modified {
-          white-space: nowrap;
+            white-space: nowrap;
         }
 
         .cell-right {
-          text-align: right;
+            text-align: right;
         }
 
         /* ── Section divider ─────────────────────── */
         .section-label {
-          font-family: var(--mono);
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: .14em;
-          text-transform: uppercase;
-          color: var(--fg-muted);
-          padding: 18px 12px 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--fg-muted);
+            padding: 18px 12px 6px;
         }
 
         /* ── Empty state ─────────────────────────── */
         .empty-state {
-          text-align: center;
-          padding: 80px 20px;
+            text-align: center;
+            padding: 80px 20px;
         }
 
         .empty-state svg {
-          opacity: .2;
-          margin-bottom: 16px;
+            opacity: .2;
+            margin-bottom: 16px;
         }
 
         .empty-state p {
-          font-family: var(--mono);
-          font-size: 13px;
-          color: var(--fg-dim);
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--fg-dim);
         }
 
         /* ── Download dropdown ───────────────────── */
         .dl-wrap {
-          position: relative;
-          display: inline-block;
+            position: relative;
+            display: inline-block;
         }
 
         .btn-dl-toggle {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 26px;
-          height: 26px;
-          border-radius: var(--radius);
-          border: 1px solid var(--border);
-          background: transparent;
-          color: var(--fg-muted);
-          cursor: pointer;
-          transition: border-color .15s, color .15s, background .15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--fg-muted);
+            cursor: pointer;
+            transition: border-color .15s, color .15s, background .15s;
         }
 
         .btn-dl-toggle:hover {
-          border-color: var(--accent);
-          color: var(--accent);
-          background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
         }
 
         .btn-dl-toggle.loading {
-          opacity: .5;
-          cursor: wait;
-          pointer-events: none;
+            opacity: .5;
+            cursor: wait;
+            pointer-events: none;
         }
 
         .dropdown-right {
-          left: auto;
-          right: 0;
+            left: auto;
+            right: 0;
         }
 
         /* ── Download button ─────────────────────── */
         .btn-dl {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          font-family: var(--mono);
-          font-size: 11px;
-          padding: 4px 10px;
-          border-radius: var(--radius);
-          border: 1px solid var(--border);
-          background: transparent;
-          color: var(--fg-dim);
-          cursor: pointer;
-          transition: border-color .15s, color .15s, background .15s;
-          white-space: nowrap;
-          text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--fg-dim);
+            cursor: pointer;
+            transition: border-color .15s, color .15s, background .15s;
+            white-space: nowrap;
+            text-decoration: none;
         }
 
         .btn-dl:hover {
-          border-color: var(--accent);
-          color: var(--accent);
-          background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
         }
 
         .btn-dl.loading {
-          opacity: .5;
-          cursor: wait;
-          pointer-events: none;
+            opacity: .5;
+            cursor: wait;
+            pointer-events: none;
         }
 
         .cell-action {
-          width: 1%;
-          white-space: nowrap;
-          text-align: right;
-          padding-right: 8px;
+            width: 1%;
+            white-space: nowrap;
+            text-align: right;
+            padding-right: 8px;
         }
 
         /* ── Footer ──────────────────────────────── */
         .footer {
-          padding: 16px 28px;
-          border-top: 1px solid var(--border);
-          font-family: var(--mono);
-          font-size: 11px;
-          color: var(--fg-muted);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+            padding: 16px 28px;
+            border-top: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--fg-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         /* ── Full-screen drop zone ───────────────────── */
         body.drag-over::before {
-        content: "Drop file or folder";
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 15, 16, 0.88);
-        border: 2px dashed var(--accent);
-        color: var(--accent);
-        font-family: var(--mono);
-        font-size: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 999;
-        pointer-events: none;
-        backdrop-filter: blur(3px);
+            content: "Drop file or folder";
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 15, 16, 0.88);
+            border: 2px dashed var(--accent);
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            pointer-events: none;
+            backdrop-filter: blur(3px);
         }
 
         /* ── Popup modal ─────────────────────────────── */
         .popup-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
 
         .popup-overlay.active {
-        display: flex;
+            display: flex;
         }
 
         .popup {
-        width: 420px;
-        max-width: calc(100vw - 32px);
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 22px;
-        box-shadow: 0 20px 60px rgba(0,0,0,.45);
+            width: 420px;
+            max-width: calc(100vw - 32px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
         }
 
         .popup h2 {
-        font-family: var(--mono);
-        font-size: 16px;
-        margin-bottom: 12px;
+            font-family: var(--mono);
+            font-size: 16px;
+            margin-bottom: 12px;
         }
 
         .popup p {
-        color: var(--fg-dim);
-        margin-bottom: 20px;
-        word-break: break-word;
+            color: var(--fg-dim);
+            margin-bottom: 20px;
+            word-break: break-word;
         }
 
         .popup-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
         }
 
         .popup button {
-        border: 1px solid var(--border);
-        background: var(--bg);
-        color: var(--fg);
-        padding: 8px 14px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-family: var(--mono);
-        transition: .12s ease;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--fg);
+            padding: 8px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: var(--mono);
+            transition: .12s ease;
         }
 
         .popup button:hover {
-        border-color: var(--accent);
-        color: var(--accent);
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .popup .confirm {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: white;
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
         }
 
         .popup .confirm:hover {
-        filter: brightness(1.08);
+            filter: brightness(1.08);
         }
     </style>
 </head>
 
 <body>
-<div class="shell">
-    <main class="content">
+    <div class="shell">
+        <main class="content">
 
-        <div class="top-bar">
-            <div class="menu-wrap">
-                <button class="btn" id="btn-top-menu" onclick="openTopMenu()">
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                              stroke-linejoin="round"/>
-                    </svg>
-                    Actions
-                </button>
-                <div class="dropdown" id="top-menu-dropdown">
-                    <!-- populated by openTopMenu() -->
+            <div class="top-bar">
+                <div class="menu-wrap">
+                    <button class="btn" id="btn-top-menu" onclick="openTopMenu()">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        Actions
+                    </button>
+                    <div class="dropdown" id="top-menu-dropdown">
+                        <!-- populated by openTopMenu() -->
+                    </div>
                 </div>
+                <span class="banner" id="result-banner" aria-live="polite"></span>
             </div>
-            <span class="banner" id="result-banner" aria-live="polite"></span>
-        </div>
 
-        <div class="folder-meta">
-            <h1>{{ folder.name }}</h1>
-            <span class="meta-pill">{{ folder.child_folders | length }} folder{% if folder.child_folders | length != 1 %}s{%
-          endif %}</span>
-            <span class="meta-pill">{{ folder.folders_file | length }} file{% if folder.folders_file | length != 1 %}s{%
-          endif %}</span>
-            <span class="meta-pill">{{ folder.size | filesizeformat if folder.size else '—' }}</span>
-        </div>
-        <table class="file-table" role="grid">
-            <thead>
-            <tr>
-                <th class="cell-icon"></th>
-                <th>Name</th>
-                <th>Type</th>
-                <th class="cell-right">Items / Size</th>
-                <th class="cell-right">Modified</th>
-                <th class="cell-action"></th>
-            </tr>
-            </thead>
-            <tbody>
-            {# ── Parent folder row ───────────────────────── #}
-            {% if parent_url %}
-            <tr>
-                <td class="cell-icon">
-                    <div class="icon icon-folder">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div class="folder-meta">
+                <h1>{{ folder.name }}</h1>
+                <span class="meta-pill">{{ folder.child_folders | length }} folder{% if folder.child_folders | length !=
+                    1 %}s{%
+                    endif %}</span>
+                <span class="meta-pill">{{ folder.folders_file | length }} file{% if folder.folders_file | length != 1
+                    %}s{%
+                    endif %}</span>
+                <span class="meta-pill">{{ folder.size | filesizeformat if folder.size else '—' }}</span>
+            </div>
+            <table class="file-table" role="grid">
+                <thead>
+                    <tr>
+                        <th class="cell-icon"></th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th class="cell-right">Items / Size</th>
+                        <th class="cell-right">Modified</th>
+                        <th class="cell-action"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# ── Parent folder row ───────────────────────── #}
+                    {% if parent_url %}
+                    <tr>
+                        <td class="cell-icon">
+                            <div class="icon icon-folder">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
 
-                            <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
-                                  stroke="currentColor" stroke-width="1.2" fill="none"/>
-                        </svg>
-                    </div>
-                </td>
-                <td class="cell-name">
-                    <a class="row-link" href="{{ parent_url }}">../</a>
-                </td>
-                <td>
-                    <span class="badge badge-folder">folder</span>
-                </td>
-                <td class="cell-right">—</td>
-                <td class="cell-right">—</td>
-                <td class="cell-action"></td>
-            </tr>
-            {% endif %}
-            {# ── Folders ─────────────────────────────────── #}
-            {% for subfolder in folder.child_folders %}
-            <tr>
-                <td class="cell-icon">
-                    <div class="icon icon-folder">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
-                                  stroke="currentColor" stroke-width="1.2" fill="none"/>
-                        </svg>
-                    </div>
-                </td>
-                <td class="cell-name">
-                    <a class="row-link"
-                       href="/browse/{{ breadcrumbs[1:] | map(attribute='name') | list | join('/') }}{% if breadcrumbs | length > 1 %}/{% endif %}{{ subfolder.name }}">
-                        {{ subfolder.name }}
-                    </a>
-                </td>
-                <td>
-                    <span class="badge badge-folder">folder</span>
-                </td>
-                <td class="cell-items cell-right">
-                    {{ subfolder.element_count }}
-                    item{% if subfolder.element_count != 1 %}s{% endif %}
-                </td>
-                <td class="cell-modified cell-right">
-                    {{ subfolder.modified_at.strftime('%b %d, %Y') }}
-                </td>
-                <td class="cell-action">
-                    {% set subfolder_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
-                    {% if subfolder_path %}{% set subfolder_path = subfolder_path + '/' %}{% endif %}
-                    <div class="dl-wrap">
-                        <button class="btn-dl-toggle"
-                                onclick="toggleDlMenu(this, '{{ subfolder_path }}{{ subfolder.name }}', 'folder')"
-                                title="Actions">
-                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                                      stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="dropdown dropdown-right"></div>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-            {# ── Files ───────────────────────────────────── #}
-            {% for file in folder.folders_file %}
-            <tr>
-                <td class="cell-icon">
-                    <div class="icon icon-file">
-                        <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M2 1.5H8.5L12 5V14.5H2V1.5Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
-                            <path d="M8.5 1.5V5H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                </td>
-                <td class="cell-name">
-              <span class="row-name-plain">
-                {{ file.name }}
-              </span>
-                </td>
-                <td>
-              <span class="badge badge-file">
-                {{ file.extension if file.extension else 'file' }}
-              </span>
-                </td>
-                <td class="cell-size cell-right">
-                    {% if file.size >= 1073741824 %}
-                    {{ "%.1f"|format(file.size / 1073741824) }} GB
-                    {% elif file.size >= 1048576 %}
-                    {{ "%.1f"|format(file.size / 1048576) }} MB
-                    {% elif file.size >= 1024 %}
-                    {{ "%.1f"|format(file.size / 1024) }} KB
-                    {% else %}
-                    {{ file.size }} B
+                                    <path
+                                        d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
+                                        stroke="currentColor" stroke-width="1.2" fill="none" />
+                                </svg>
+                            </div>
+                        </td>
+                        <td class="cell-name">
+                            <a class="row-link" href="{{ parent_url }}">../</a>
+                        </td>
+                        <td>
+                            <span class="badge badge-folder">folder</span>
+                        </td>
+                        <td class="cell-right">—</td>
+                        <td class="cell-right">—</td>
+                        <td class="cell-action"></td>
+                    </tr>
                     {% endif %}
-                </td>
-                <td class="cell-modified cell-right">
-                    {{ file.modified_at.strftime('%b %d, %Y') }}
-                </td>
-                <td class="cell-action">
-                    {% set file_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
-                    {% if file_path %}{% set file_path = file_path + '/' %}{% endif %}
-                    <div class="dl-wrap">
-                        <button class="btn-dl-toggle"
-                                onclick="toggleDlMenu(this, '{{ file_path }}{{ file.name }}', 'file')"
-                                title="Actions">
-                            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                                      stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="dropdown dropdown-right"></div>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-            {# ── Empty folder row ────────────────────────── #}
-            {% if not folder.child_folders and not folder.folders_file %}
-            <tr>
-                <td colspan="6" class="empty-row">
-                    <div class="empty-state">
-                        <svg width="48" height="48" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
-                                  stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <p>This folder is empty</p>
-                    </div>
-                </td>
-            </tr>
-            {% endif %}
-            </tbody>
-        </table>
+                    {# ── Folders ─────────────────────────────────── #}
+                    {% for subfolder in folder.child_folders %}
+                    <tr>
+                        <td class="cell-icon">
+                            <div class="icon icon-folder">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
+                                        stroke="currentColor" stroke-width="1.2" fill="none" />
+                                </svg>
+                            </div>
+                        </td>
+                        <td class="cell-name">
+                            <a class="row-link"
+                                href="/browse/{{ breadcrumbs[1:] | map(attribute='name') | list | join('/') }}{% if breadcrumbs | length > 1 %}/{% endif %}{{ subfolder.name }}">
+                                {{ subfolder.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge badge-folder">folder</span>
+                        </td>
+                        <td class="cell-items cell-right">
+                            {{ subfolder.element_count }}
+                            item{% if subfolder.element_count != 1 %}s{% endif %}
+                        </td>
+                        <td class="cell-modified cell-right">
+                            {{ subfolder.modified_at.strftime('%b %d, %Y') }}
+                        </td>
+                        <td class="cell-action">
+                            {% set subfolder_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
+                            {% if subfolder_path %}{% set subfolder_path = subfolder_path + '/' %}{% endif %}
+                            <div class="dl-wrap">
+                                <button class="btn-dl-toggle"
+                                    onclick="toggleDlMenu(this, '{{ subfolder_path }}{{ subfolder.name }}', 'folder')"
+                                    title="Actions">
+                                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                                <div class="dropdown dropdown-right"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {# ── Files ───────────────────────────────────── #}
+                    {% for file in folder.folders_file %}
+                    <tr>
+                        <td class="cell-icon">
+                            <div class="icon icon-file">
+                                <svg width="14" height="16" viewBox="0 0 14 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2 1.5H8.5L12 5V14.5H2V1.5Z" stroke="currentColor" stroke-width="1.2"
+                                        fill="none" />
+                                    <path d="M8.5 1.5V5H12" stroke="currentColor" stroke-width="1.2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </td>
+                        <td class="cell-name">
+                            <span class="row-name-plain">
+                                {{ file.name }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-file">
+                                {{ file.extension if file.extension else 'file' }}
+                            </span>
+                        </td>
+                        <td class="cell-size cell-right">
+                            {% if file.size >= 1073741824 %}
+                            {{ "%.1f"|format(file.size / 1073741824) }} GB
+                            {% elif file.size >= 1048576 %}
+                            {{ "%.1f"|format(file.size / 1048576) }} MB
+                            {% elif file.size >= 1024 %}
+                            {{ "%.1f"|format(file.size / 1024) }} KB
+                            {% else %}
+                            {{ file.size }} B
+                            {% endif %}
+                        </td>
+                        <td class="cell-modified cell-right">
+                            {{ file.modified_at.strftime('%b %d, %Y') }}
+                        </td>
+                        <td class="cell-action">
+                            {% set file_path = (breadcrumbs[1:] | map(attribute='name') | list | join('/')) %}
+                            {% if file_path %}{% set file_path = file_path + '/' %}{% endif %}
+                            <div class="dl-wrap">
+                                <button class="btn-dl-toggle"
+                                    onclick="toggleDlMenu(this, '{{ file_path }}{{ file.name }}', 'file')"
+                                    title="Actions">
+                                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                                <div class="dropdown dropdown-right"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {# ── Empty folder row ────────────────────────── #}
+                    {% if not folder.child_folders and not folder.folders_file %}
+                    <tr>
+                        <td colspan="6" class="empty-row">
+                            <div class="empty-state">
+                                <svg width="48" height="48" viewBox="0 0 16 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M1.5 3.5C1.5 2.95 1.95 2.5 2.5 2.5H6.086C6.351 2.5 6.604 2.605 6.793 2.793L7.707 3.707C7.895 3.895 8.149 4 8.414 4H13.5C14.052 4 14.5 4.448 14.5 5V12.5C14.5 13.052 14.052 13.5 13.5 13.5H2.5C1.948 13.5 1.5 13.052 1.5 12.5V3.5Z"
+                                        stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                <p>This folder is empty</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
 
-        <div class="popup-overlay" id="popupOverlay">
-            <div class="popup">
-                <h2 id="popupHeader"></h2>
-                <p id="popupText"></p>
+            <div class="popup-overlay" id="popupOverlay">
+                <div class="popup">
+                    <h2 id="popupHeader"></h2>
+                    <p id="popupText"></p>
 
-                <div class="popup-actions">
-                    <button id="cancelBtn">Cancel</button>
-                    <button class="confirm" id="confirmBtn">Upload</button>
+                    <div class="popup-actions">
+                        <button id="cancelBtn">Cancel</button>
+                        <button class="confirm" id="confirmBtn">Upload</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-    </main>
+        </main>
 
-</div>
+    </div>
 
-<script>
-    window.OS_NAME = {{ os_name | tojson }};
-    window.FS_TYPE = {{ fs_type | tojson }};
-    const CURRENT_PATH = location.pathname.startsWith("/browse/")
-    ? decodeURIComponent(location.pathname.slice("/browse/".length))
-    : "";
-</script>
-<script src="/FileUploadController.js"></script>
-<script src="/FileValidationController.js"></script>
-<script>
-    const dropdown = document.getElementById("top-menu-dropdown");
-    let _menuOpen = false;
+    <script>
+        window.OS_NAME = {{ os_name | tojson }};
+        window.FS_TYPE = {{ fs_type | tojson }};
+        const CURRENT_PATH = location.pathname.startsWith("/browse/")
+            ? decodeURIComponent(location.pathname.slice("/browse/".length))
+            : "";
+    </script>
+    <!-- 60.2 nieko panašaus klasių diagramos fragmente nėra -->
+    <script src="/FileUploadController.js"></script>
+    <script src="/FileValidationController.js"></script>
+    <script>
+        const dropdown = document.getElementById("top-menu-dropdown");
+        let _menuOpen = false;
 
-    async function openTopMenu() {
-        if (_menuOpen) {
-            closeMenu();
-            return;
-        }
+        async function openTopMenu() {
+            if (_menuOpen) {
+                closeMenu();
+                return;
+            }
 
-        let data;
-        try {
-            const res = await fetch("/api/top-menu");
-            data = await res.json();
-        } catch {
-            showBanner("error", "✗ Could not reach the server.");
-            return;
-        }
+            let data;
+            try {
+                const res = await fetch("/api/top-menu");
+                data = await res.json();
+            } catch {
+                showBanner("error", "✗ Could not reach the server.");
+                return;
+            }
 
-        dropdown.innerHTML = "";
+            dropdown.innerHTML = "";
 
-        if (data.allow_folder_creation) {
-            const item = document.createElement("button");
-            item.className = "dropdown-item";
-            item.innerHTML = `
+            if (data.allow_folder_creation) {
+                const item = document.createElement("button");
+                item.className = "dropdown-item";
+                item.innerHTML = `
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                 </svg>
                 New folder`;
-            item.onclick = () => { closeMenu(); createFolder(); };
-            dropdown.appendChild(item);
-        } else {
-            const empty = document.createElement("div");
-            empty.className = "dropdown-empty";
-            empty.textContent = "No available actions";
-            dropdown.appendChild(empty);
-        }
-
-        dropdown.classList.add("open");
-        _menuOpen = true;
-    }
-
-    function closeMenu() {
-        dropdown.classList.remove("open");
-        _menuOpen = false;
-    }
-
-    document.addEventListener("click", (e) => {
-        if (_menuOpen && !document.getElementById("btn-top-menu").contains(e.target) && !dropdown.contains(e.target)) {
-            closeMenu();
-        }
-    });
-
-    async function createFolder(folderName = "new_folder") {
-        const btn = document.getElementById("btn-top-menu");
-        btn.disabled = true;
-
-        try {
-            const res = await fetch("/api/create-folder", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ current_path: CURRENT_PATH, folder_name: folderName }),
-            });
-            const data = await res.json();
-
-            if (data.ok) {
-                showBanner("success", `✓ Created "${data.folder_name || folderName}"`);
-
-                setTimeout(() => location.reload(), 1000);
+                item.onclick = () => { closeMenu(); createFolder(); };
+                dropdown.appendChild(item);
             } else {
-                showBanner("error", `✗ ${data.error}`);
+                const empty = document.createElement("div");
+                empty.className = "dropdown-empty";
+                empty.textContent = "No available actions";
+                dropdown.appendChild(empty);
+            }
+
+            dropdown.classList.add("open");
+            _menuOpen = true;
+        }
+
+        function closeMenu() {
+            dropdown.classList.remove("open");
+            _menuOpen = false;
+        }
+
+        document.addEventListener("click", (e) => {
+            if (_menuOpen && !document.getElementById("btn-top-menu").contains(e.target) && !dropdown.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        async function createFolder(folderName = "new_folder") {
+            const btn = document.getElementById("btn-top-menu");
+            btn.disabled = true;
+
+            try {
+                const res = await fetch("/api/create-folder", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ current_path: CURRENT_PATH, folder_name: folderName }),
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    showBanner("success", `✓ Created "${data.folder_name || folderName}"`);
+
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showBanner("error", `✗ ${data.error}`);
+                    btn.disabled = false;
+                }
+            } catch {
+                showBanner("error", "✗ Network error — could not reach the server.");
                 btn.disabled = false;
             }
-        } catch {
-            showBanner("error", "✗ Network error — could not reach the server.");
-            btn.disabled = false;
         }
-    }
 
-    function showBanner(type, message) {
-        const banner = document.getElementById("result-banner");
-        banner.className = `banner ${type}`;
-        banner.textContent = message;
-    }
+        function showBanner(type, message) {
+            const banner = document.getElementById("result-banner");
+            banner.className = `banner ${type}`;
+            banner.textContent = message;
+        }
 
-    function toggleDlMenu(btn, relPath, kind) {
-        const wrap = btn.closest(".dl-wrap");
-        const ddrop = wrap.querySelector(".dropdown");
-        const isOpen = ddrop.classList.contains("open");
-        closeDlMenus();
-        if (isOpen) return;
+        function toggleDlMenu(btn, relPath, kind) {
+            const wrap = btn.closest(".dl-wrap");
+            const ddrop = wrap.querySelector(".dropdown");
+            const isOpen = ddrop.classList.contains("open");
+            closeDlMenus();
+            if (isOpen) return;
 
-        ddrop.innerHTML = `<div class="dropdown-empty">loading…</div>`;
-        ddrop.classList.add("open");
+            ddrop.innerHTML = `<div class="dropdown-empty">loading…</div>`;
+            ddrop.classList.add("open");
 
-        fetch("/api/menu")
-            .then(r => r.json())
-            .then(data => {
-                ddrop.innerHTML = "";
-                if (data.allow_download) {
-                    const label = kind === "folder" ? "Download as .zip" : "Download file";
-                    const item = document.createElement("button");
-                    item.className = "dropdown-item";
-                    item.innerHTML = `
+            fetch("/api/menu")
+                .then(r => r.json())
+                .then(data => {
+                    ddrop.innerHTML = "";
+                    if (data.allow_download) {
+                        const label = kind === "folder" ? "Download as .zip" : "Download file";
+                        const item = document.createElement("button");
+                        item.className = "dropdown-item";
+                        item.innerHTML = `
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M8 2v9M4.5 7.5 8 11l3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                         </svg>
                         ${label}`;
-                    item.onclick = () => { closeDlMenus(); downloadItem(btn, relPath); };
-                    ddrop.appendChild(item);
-                } else {
-                    const empty = document.createElement("div");
-                    empty.className = "dropdown-empty";
-                    empty.textContent = "No available actions";
-                    ddrop.appendChild(empty);
-                }
-            })
-            .catch(() => {
-                ddrop.innerHTML = `<div class="dropdown-empty">Could not load actions</div>`;
-            });
-    }
-
-    function closeDlMenus() {
-        document.querySelectorAll(".dl-wrap .dropdown.open").forEach(d => d.classList.remove("open"));
-    }
-
-    async function downloadItem(btn, relPath) {
-        btn.classList.add("downloading");
-        try {
-            const a = document.createElement("a");
-            a.href = "/api/download?path=" + encodeURIComponent(relPath);
-            a.download = "";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        } finally {
-            btn.classList.remove("loading");
+                        item.onclick = () => { closeDlMenus(); downloadItem(btn, relPath); };
+                        ddrop.appendChild(item);
+                    } else {
+                        const empty = document.createElement("div");
+                        empty.className = "dropdown-empty";
+                        empty.textContent = "No available actions";
+                        ddrop.appendChild(empty);
+                    }
+                })
+                .catch(() => {
+                    ddrop.innerHTML = `<div class="dropdown-empty">Could not load actions</div>`;
+                });
         }
-    }
 
+        function closeDlMenus() {
+            document.querySelectorAll(".dl-wrap .dropdown.open").forEach(d => d.classList.remove("open"));
+        }
 
-    /* ── Global drop zone ───────────────────────── */
-
-    const popupOverlay = document.getElementById("popupOverlay");
-    const popupHeader = document.getElementById("popupHeader");
-    const popupText = document.getElementById("popupText");
-
-    const confirmBtn = document.getElementById("confirmBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-
-    let pendingUploadFile = null;
-
-    function openPopup(header, text, confirmText = "OK", onConfirm = null) {
-        popupHeader.textContent = header;
-        popupText.innerHTML = text;
-
-        confirmBtn.textContent = confirmText;
-
-        confirmBtn.onclick = () => {
-            if (onConfirm) {
-                onConfirm();
+        async function downloadItem(btn, relPath) {
+            btn.classList.add("downloading");
+            try {
+                const a = document.createElement("a");
+                a.href = "/api/download?path=" + encodeURIComponent(relPath);
+                a.download = "";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } finally {
+                btn.classList.remove("loading");
             }
-
-            closePopup();
-        };
-
-        cancelBtn.onclick = closePopup;
-
-        popupOverlay.classList.add("active");
-    }
-
-    function closePopup() {
-        popupOverlay.classList.remove("active");
-    }
-
-    document.getElementById("confirmBtn").addEventListener("click", closePopup);
-    document.getElementById("cancelBtn").addEventListener("click", closePopup);
-
-    let dragCounter = 0;
-
-    window.addEventListener("dragenter", (e) => {
-        e.preventDefault();
-        dragCounter++;
-        document.body.classList.add("drag-over");
-    });
-
-    window.addEventListener("dragover", (e) => {
-        e.preventDefault();
-    });
-
-    window.addEventListener("dragleave", (e) => {
-        e.preventDefault();
-
-        dragCounter--;
-
-        if (dragCounter <= 0) {
-            document.body.classList.remove("drag-over");
-            dragCounter = 0;
         }
-    });
 
-    async function handleFileUpload(file) {
-        pendingUploadFile = file;
 
-        openPopup(
-            "Upload file",
-            `
+        /* ── Global drop zone ───────────────────────── */
+
+        const popupOverlay = document.getElementById("popupOverlay");
+        const popupHeader = document.getElementById("popupHeader");
+        const popupText = document.getElementById("popupText");
+
+        const confirmBtn = document.getElementById("confirmBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+
+        let pendingUploadFile = null;
+
+        function openPopup(header, text, confirmText = "OK", onConfirm = null) {
+            popupHeader.textContent = header;
+            popupText.innerHTML = text;
+
+            confirmBtn.textContent = confirmText;
+
+            confirmBtn.onclick = () => {
+                if (onConfirm) {
+                    onConfirm();
+                }
+
+                closePopup();
+            };
+
+            cancelBtn.onclick = closePopup;
+
+            popupOverlay.classList.add("active");
+        }
+
+        function closePopup() {
+            popupOverlay.classList.remove("active");
+        }
+
+        document.getElementById("confirmBtn").addEventListener("click", closePopup);
+        document.getElementById("cancelBtn").addEventListener("click", closePopup);
+
+        let dragCounter = 0;
+
+        window.addEventListener("dragenter", (e) => {
+            e.preventDefault();
+            dragCounter++;
+            document.body.classList.add("drag-over");
+        });
+
+        window.addEventListener("dragover", (e) => {
+            e.preventDefault();
+        });
+
+        window.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+
+            dragCounter--;
+
+            if (dragCounter <= 0) {
+                document.body.classList.remove("drag-over");
+                dragCounter = 0;
+            }
+        });
+
+        async function handleFileUpload(file) {
+            pendingUploadFile = file;
+
+            openPopup(
+                "Upload file",
+                `
             <strong>${file.name}</strong><br><br>
             Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
             `,
-            "Upload",
-            async () => {
-                const uploader = new FileUploadController(file);
+                "Upload",
+                async () => {
+                    const uploader = new FileUploadController(file);
 
-                const result = await uploader.start_uploading();
+                    const result = await uploader.start_uploading();
 
-                if (result.ok) {
-                    openPopup(
-                        "Upload started",
-                        `
+                    if (result.ok) {
+                        openPopup(
+                            "Upload started",
+                            `
                         File: <strong>${file.name}</strong><br>
                         Parts: ${result.partCount}
                         `
-                    );
-                } else {
-                    openPopup(
-                        "Error",
-                        result.errors.join("<br>")
-                    );
+                        );
+                    } else {
+                        openPopup(
+                            "Error",
+                            result.errors.join("<br>")
+                        );
+                    }
+                }
+            );
+        }
+
+        async function handleFolderUpload(folder) {
+            const entries = [];
+
+            // ─────────────────────────────
+            // 1. Flatten directory tree
+            // ─────────────────────────────
+            async function walk(dirEntry, basePath = "") {
+                const reader = dirEntry.createReader();
+
+                const readAll = async () => {
+                    const results = [];
+                    while (true) {
+                        const batch = await new Promise((resolve, reject) =>
+                            reader.readEntries(resolve, reject)
+                        );
+                        if (!batch.length) break;
+                        results.push(...batch);
+                    }
+                    return results;
+                };
+
+                const children = await readAll();
+
+                const currentPath = basePath
+                    ? `${basePath}/${dirEntry.name}`
+                    : dirEntry.name;
+
+                for (const child of children) {
+
+                    if (child.isDirectory) {
+                        entries.push({
+                            path: `${currentPath}/${child.name}/`,
+                            type: "folder",
+                            entry: child,
+                        });
+
+                        await walk(child, currentPath);
+
+                    } else {
+                        entries.push({
+                            path: `${currentPath}/${child.name}`,
+                            type: "file",
+                            entry: child,
+                        });
+                    }
                 }
             }
-        );
-    }
 
-    async function handleFolderUpload(folder) {
-        const entries = [];
+            await walk(folder, "");
 
-        // ─────────────────────────────
-        // 1. Flatten directory tree
-        // ─────────────────────────────
-        async function walk(dirEntry, basePath = "") {
-            const reader = dirEntry.createReader();
+            entries.unshift({
+                path: `${folder.name}/`,
+                type: "folder",
+                entry: folder,
+            });
 
-            const readAll = async () => {
-                const results = [];
-                while (true) {
-                    const batch = await new Promise((resolve, reject) =>
-                        reader.readEntries(resolve, reject)
-                    );
-                    if (!batch.length) break;
-                    results.push(...batch);
+            // ─────────────────────────────
+            // 2. Sort (folders first, shallow first)
+            // ─────────────────────────────
+            entries.sort((a, b) => {
+                if (a.type !== b.type) {
+                    return a.type === "folder" ? -1 : 1;
                 }
-                return results;
-            };
 
-            const children = await readAll();
+                return a.path.localeCompare(b.path);
+            });
 
-            const currentPath = basePath
-                ? `${basePath}/${dirEntry.name}`
-                : dirEntry.name;
+            // ─────────────────────────────
+            // 3. Execute sequentially
+            // ─────────────────────────────
+            for (const item of entries) {
 
-            for (const child of children) {
+                // ────────────────
+                // FOLDER HANDLING
+                // ────────────────
+                if (item.type === "folder") {
 
-                if (child.isDirectory) {
-                    entries.push({
-                        path: `${currentPath}/${child.name}/`,
-                        type: "folder",
-                        entry: child,
+                    const folderPath = item.path.slice(0, -1); // remove trailing "/"
+
+                    const validator = new FileValidationController(folderPath);
+
+                    if (!validator.validatePath()) {
+                        openPopup(
+                            "Invalid folder path",
+                            validator.errors.join("<br>")
+                        );
+                        return;
+                    }
+
+                    const res = await fetch("/api/create-folder", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            current_path: CURRENT_PATH,
+                            folder_name: folderPath,
+                        }),
                     });
 
-                    await walk(child, currentPath);
+                    const data = await res.json();
 
-                } else {
-                    entries.push({
-                        path: `${currentPath}/${child.name}`,
-                        type: "file",
-                        entry: child,
-                    });
+                    if (!data.ok) {
+                        openPopup(
+                            "Folder creation failed",
+                            `${folderPath}<br><br>${data.error}`
+                        );
+                        return;
+                    }
+                }
+
+                // ────────────────
+                // FILE HANDLING
+                // ────────────────
+                else {
+
+                    const file = await new Promise((resolve) =>
+                        item.entry.file(resolve)
+                    );
+
+                    // IMPORTANT: override path inside uploader
+                    const uploader = new FileUploadController(file);
+
+                    // inject correct structure path
+                    uploader.filepath = CURRENT_PATH
+                        ? `${CURRENT_PATH}/${item.path}`
+                        : item.path;
+
+                    const result = await uploader.start_uploading();
+
+                    if (!result.ok) {
+                        openPopup(
+                            "Upload failed",
+                            `${item.path}<br><br>${result.errors.join("<br>")}`
+                        );
+                        return;
+                    }
                 }
             }
+
+            openPopup(
+                "Upload complete",
+                `Folder <strong>${folder.name}</strong> uploaded successfully.`
+            );
         }
 
-        await walk(folder, "");
+        window.addEventListener("drop", async (e) => {
+            e.preventDefault();
 
-        entries.unshift({
-            path: `${folder.name}/`,
-            type: "folder",
-            entry: folder,
-        });
+            dragCounter = 0;
+            document.body.classList.remove("drag-over");
 
-        // ─────────────────────────────
-        // 2. Sort (folders first, shallow first)
-        // ─────────────────────────────
-        entries.sort((a, b) => {
-            if (a.type !== b.type) {
-                return a.type === "folder" ? -1 : 1;
+            const items = e.dataTransfer?.items;
+
+            if (!items || !items.length) {
+                return;
             }
 
-            return a.path.localeCompare(b.path);
-        });
+            try {
+                const response = await fetch("/api/upload_file");
+                const data = await response.json();
 
-        // ─────────────────────────────
-        // 3. Execute sequentially
-        // ─────────────────────────────
-        for (const item of entries) {
-
-            // ────────────────
-            // FOLDER HANDLING
-            // ────────────────
-            if (item.type === "folder") {
-
-                const folderPath = item.path.slice(0, -1); // remove trailing "/"
-
-                const validator = new FileValidationController(folderPath);
-
-                if (!validator.validatePath()) {
+                if (!data.allow_upload) {
                     openPopup(
-                        "Invalid folder path",
-                        validator.errors.join("<br>")
+                        "Upload blocked",
+                        "File uploads are disabled on this server."
                     );
+
                     return;
                 }
-
-                const res = await fetch("/api/create-folder", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        current_path: CURRENT_PATH,
-                        folder_name: folderPath,
-                    }),
-                });
-
-                const data = await res.json();
-
-                if (!data.ok) {
-                    openPopup(
-                        "Folder creation failed",
-                        `${folderPath}<br><br>${data.error}`
-                    );
-                    return;
-                }
-            }
-
-            // ────────────────
-            // FILE HANDLING
-            // ────────────────
-            else {
-
-                const file = await new Promise((resolve) =>
-                    item.entry.file(resolve)
-                );
-
-                // IMPORTANT: override path inside uploader
-                const uploader = new FileUploadController(file);
-
-                // inject correct structure path
-                uploader.filepath = CURRENT_PATH
-                    ? `${CURRENT_PATH}/${item.path}`
-                    : item.path;
-
-                const result = await uploader.start_uploading();
-
-                if (!result.ok) {
-                    openPopup(
-                        "Upload failed",
-                        `${item.path}<br><br>${result.errors.join("<br>")}`
-                    );
-                    return;
-                }
-            }
-        }
-
-        openPopup(
-            "Upload complete",
-            `Folder <strong>${folder.name}</strong> uploaded successfully.`
-        );
-    }
-
-    window.addEventListener("drop", async (e) => {
-        e.preventDefault();
-
-        dragCounter = 0;
-        document.body.classList.remove("drag-over");
-
-        const items = e.dataTransfer?.items;
-
-        if (!items || !items.length) {
-            return;
-        }
-
-        try {
-            const response = await fetch("/api/upload_file");
-            const data = await response.json();
-
-            if (!data.allow_upload) {
+            } catch (err) {
                 openPopup(
-                    "Upload blocked",
-                    "File uploads are disabled on this server."
+                    "Server error",
+                    "Failed to verify upload permissions."
                 );
 
                 return;
             }
-        } catch (err) {
-            openPopup(
-                "Server error",
-                "Failed to verify upload permissions."
-            );
 
-            return;
-        }
+            const item = items[0];
 
-        const item = items[0];
+            let entry = null;
 
-        let entry = null;
+            if (item.webkitGetAsEntry) {
+                entry = item.webkitGetAsEntry();
+            }
 
-        if (item.webkitGetAsEntry) {
-            entry = item.webkitGetAsEntry();
-        }
-
-        if (entry && entry.isDirectory) {
-            openPopup(
-                "Upload folder",
-                `<strong>${entry.name}</strong><br><br>
+            if (entry && entry.isDirectory) {
+                openPopup(
+                    "Upload folder",
+                    `<strong>${entry.name}</strong><br><br>
                 Uploading folders is being processed.`,
-                "Continue",
-                async () => {
-                    await handleFolderUpload(entry);
-                }
-            );
+                    "Continue",
+                    async () => {
+                        await handleFolderUpload(entry);
+                    }
+                );
 
-            return;
-        }
+                return;
+            }
 
-        let file = null;
+            let file = null;
 
-        if (entry && entry.isFile) {
-            entry.file((f) => {
-                handleFileUpload(f);
-            });
-            return;
-        }
+            if (entry && entry.isFile) {
+                entry.file((f) => {
+                    handleFileUpload(f);
+                });
+                return;
+            }
 
-        file = item.getAsFile();
+            file = item.getAsFile();
 
-        if (!file) {
-            openPopup(
-                "Unsupported item",
-                "Only files are currently supported."
-            );
+            if (!file) {
+                openPopup(
+                    "Unsupported item",
+                    "Only files are currently supported."
+                );
 
-            return;
-        }
+                return;
+            }
 
-        handleFileUpload(file);
-    });
-</script>
+            handleFileUpload(file);
+        });
+    </script>
 </body>
 
 </html>

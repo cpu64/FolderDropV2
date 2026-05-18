@@ -9,6 +9,7 @@ class MainWindow(QMainWindow):
     def __init__(self, on_open_settings, on_start_sharing):
         super().__init__()
 
+        # 56.1 nematau controller atributo
         self.setWindowTitle("FolderDrop Main")
         self.setMinimumSize(400, 250)
 

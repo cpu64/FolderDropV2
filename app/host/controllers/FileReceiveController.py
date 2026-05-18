@@ -9,7 +9,7 @@ class FileReceiveController:
     def __init__(self):
         self.temp_folder = Path(gettempdir()) / "FolderDropV2"
         self.TemporaryFiles: dict[str, FilePart] = {}
-        self.settings = settings_store.get_settings()
+        self.settings = settings_store.get_settings() # 54.1 screams in PEP8
 
     def recieve_metadata(self, data):
         filepath = data.get("filepath")

@@ -23,6 +23,7 @@ class WebController:
         self.browser_interface = BrowserInterface()
         self.dir_cache = dir_cache
         self.rec_con = FileReceiveController()
+        # 58.2 Folder, FileUploadController atributų nėra
 
         self.os_name = platform.system()
         path = settings_store.get_settings().path or "."

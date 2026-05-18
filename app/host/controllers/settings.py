@@ -6,11 +6,12 @@ from app.host.ui.settings import SettingsWindow
 
 class SettingsWindowController:
     def __init__(self):
-        self.settings_window = SettingsWindow(self.save_settings, self.browse_path)
+        self.settings_window = SettingsWindow(self.save_settings, self.browse_path) # 55.3 iš kur yra save_settings ir browse_path atributai šitoje klasėje?
         self.settings_window.setWindowTitle("Settings")
         self.settings_window.setMinimumSize(400, 300)
         self.settings_window.set_settings(settings_store.get_settings())
         self.settings_window.show()
+        # 55.4 diagramoje dar yra SettingsStore
 
     # ------------------------
     # Path browsing

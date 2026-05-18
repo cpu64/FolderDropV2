@@ -11,6 +11,7 @@ class SettingsWindow(QDialog):
     def __init__(self, save_settings, browse_path):
         super().__init__()
 
+        # 56.2 nematau controllerio
         self.save_settings = save_settings
         self.browse_path = browse_path
 

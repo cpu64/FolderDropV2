@@ -7,6 +7,7 @@ from app.models.FileSystemObject import FileSystemObject
 
 
 class FileController:
+    # 55.1 kryptinė asociacija tarp controller ir entity reiškia, kad turėtų būti atributas, bet pvz čia nematau, kad būtų FileSystemObject tipo atributas
     def __init__(self):
         self.owner_fs = OwnerFileSystemInterface()
         self.dir_cache = None

@@ -18,7 +18,7 @@ class MainWindowController:
         self.app = QApplication(sys.argv)
         self.main_window = MainWindow(
             on_open_settings=self.open_settings,
-            on_start_sharing=self.startSharing,
+            on_start_sharing=self.startSharing, # 55.2 diagramoje ryšys ne į tą pusę
         )
         self.settings_controller = None
         self.file_controller = FileController()

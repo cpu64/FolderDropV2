@@ -11,15 +11,15 @@ class FileUploadController {
         this.chunks = [];
 
         this.filepath = CURRENT_PATH
-        ? `${CURRENT_PATH}/${file.name}`
-        : file.name;
+            ? `${CURRENT_PATH}/${file.name}`
+            : file.name;
     }
 
     async start_uploading() {
 
         const validator = new FileValidationController(
             this.filepath
-        );
+        ); // 58.1 jeigu tik tiek siejasi su FileValidationController, tai ten yra dependency, ne asociacija
 
         const isValid = validator.validatePath();
 
@@ -98,8 +98,8 @@ class FileUploadController {
 
         for (
             let i = 0;
-        i < this.maxConcurrentUploads;
-        i++
+            i < this.maxConcurrentUploads;
+            i++
         ) {
             workers.push(worker());
         }
@@ -113,8 +113,8 @@ class FileUploadController {
 
         for (
             let attempt = 1;
-        attempt <= this.maxRetries;
-        attempt++
+            attempt <= this.maxRetries;
+            attempt++
         ) {
 
             try {
@@ -130,7 +130,7 @@ class FileUploadController {
                 console.warn(
                     `Part ${partNumber} upload failed ` +
                     `(attempt ${attempt}/${this.maxRetries})`,
-                             error
+                    error
                 );
 
                 await this.sleep(1000);
