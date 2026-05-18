@@ -9,7 +9,7 @@ from app.host.ui.main import MainWindow
 from app.host.controllers.settings import SettingsWindowController
 from app.host.controllers.FileController import FileController
 from app.models.settings import settings_store
-from app.models.FileSystemObject import Folder
+from app.models.Folder import Folder
 from app.web.Controllers.WebController import WebController
 
 
