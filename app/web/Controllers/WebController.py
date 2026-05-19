@@ -13,7 +13,7 @@ from app.host.interfaces.OwnerFileSystemInterface import OwnerFileSystemInterfac
 from app.host.controllers.FileReceiveController import FileReceiveController
 from app.models.settings import settings_store
 from app.web.Interfaces.BrowserInterface import BrowserInterface
-from app.models.FileSystemObject import FileSystemObject, Folder
+from app.models.Folder import Folder
 
 
 class WebController:
